@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+    {{ macros.bc(breadcrumb) }}
+        <h1>
+            {{ node.content.title }}
+        </h1>
+        <div class="nodecontent">
+            {{ node.content.body|safe }}
+        </div>
+        {% if node.children %}
+        <hr>
+        <ul class="childrenlist">
+            {% for child in node.children|children_sorted %}
+            <li>{% if child.children %} &raquo; {% else %} &bull; {% endif %}
+                <a href="{{ url_for('main.book', id=child.id) }}">{{ child.content.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

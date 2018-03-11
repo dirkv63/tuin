@@ -1,0 +1,107 @@
+{% extends "bootstrap/base.html" %}
+
+{% block styles %}
+{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% endblock %}
+
+{% block title %}Tuin{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">Tuin</a>
+            </div>
+            <div class="collapse navbar-collapse" id="myNavbar">
+                <ul class="nav navbar-nav">
+                     <li>
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            Informatie
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('main.book', id=1) }}">Tuinplanten</a></li>
+                            <li><a href="{{ url_for('main.book', id=109) }}">Snoeitechnieken en Onderhoud</a></li>
+                            <li><a href="{{ url_for('main.book', id=131) }}">Vissen</a></li>
+                            <li><a href="{{ url_for('main.book', id=169) }}">Kalender</a></li>
+                        </ul>
+                    </li>
+                 </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('main.logout') }}">
+                                <span class="glyphicon glyphicon-log-out"></span> Logout
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('main.login') }}">
+                                <span class="glyphicon glyphicon-log-in"></span> Login</a>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-danger fade in">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% with messages = get_flashed_messages(category_filter=["warning"]) %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-warning fade in">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% with messages = get_flashed_messages(category_filter=["info", "message"]) %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info fade in">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% with messages = get_flashed_messages(category_filter=["success"]) %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-success fade in">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+</div>
+
+<div class="container">
+    {% block page_content %}
+    {% endblock %}
+</div>
+
+{% endblock %}

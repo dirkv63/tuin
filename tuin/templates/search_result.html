@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block page_content %}
+<div class="row">
+    <h1>
+        {{ title|safe }}
+    </h1>
+    <table class="table table-hover table-bordered">
+        <tr>
+            <th>Post Data</th>
+            <th>Title</th>
+            <th>Category</th>
+        </tr>
+        {% for node in node_list %}
+        <tr>
+            <td>{{ node['created']|datestamp }}</td>
+            <td>
+                <a href=" {{ url_for('main.book', id=node.nid) }}">{{ node.title }}</a>
+            </td>
+            <td>
+                {{ node['parent'] }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block page_content %}
+<div class="row">
+    {{ macros.bc(breadcrumb) }}
+    <h1>
+        {{ node.title }}
+        <small>{{ node.created|datestamp }}</small>
+    </h1>
+    {% if node.modified < 1505819143 %}
+        {{ node.body|reformat_body|safe }}
+    {% else %}
+        {{ node.body|fix_urls|safe }}
+    {% endif %}
+    {{ wtf.quick_form(form) }}
+    <ul>
+        {% for child in node.children|children_sorted %}
+        <li><a href="{{ url_for('main.node', nid=child.nid) }}">{{ child.title }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

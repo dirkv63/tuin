@@ -1,0 +1,17 @@
+############
+# Git Ignore
+############
+*.swp
+*.zip
+*.dot
+*.dot-input
+*.gif
+*.mwb.bak
+*.sqlite3
+.idea/
+__pycache__/
+*/data/*
+*/*/index/*
+temp/*
+client_secrets.json
+settings.yaml

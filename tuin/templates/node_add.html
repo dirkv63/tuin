@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block head %}
+{{ super() }}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous">
+    </script>
+    <script src="//cdn.ckeditor.com/4.7.2/standard/ckeditor.js"></script>
+{% endblock %}
+
+{% block page_content %}
+<div class="row">
+    {{ macros.bc(breadcrumb) }}
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
