@@ -6,6 +6,14 @@
     </ol>
 {% endmacro %}
 
+{% macro taxonomy(terms) %}
+    <ol class="breadcrumb">
+    {% for term in terms: %}
+        <li class="breadcrumb-item"><a href="{{ url_for('main.taxonomy', id=term.id) }}">{{ term.name }}</a></li>
+    {% endfor %}
+    </ol>
+{% endmacro %}
+
 {% macro search(searchForm) %}
     <section>
         <form action="{{ url_for('main.search') }}" method="post">

@@ -28,6 +28,28 @@ class Flickr(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
     photo_id = db.Column(db.Integer)
+    flickrdetails = db.relationship("FlickrDetails", uselist=False)
+
+
+class FlickrDetails(db.Model):
+    """
+    Table with the whereabouts of the Flickr pictures.
+    """
+    __tablename__ = "flickrdetails"
+    photo_id = db.Column(db.Integer, db.ForeignKey('flickr.photo_id'), primary_key=True)
+    datetaken = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.Text, nullable=False)
+    url_c = db.Column(db.Text, nullable=False)
+    url_l = db.Column(db.Text, nullable=False)
+    url_m = db.Column(db.Text, nullable=False)
+    url_n = db.Column(db.Text, nullable=False)
+    url_o = db.Column(db.Text, nullable=False)
+    url_q = db.Column(db.Text, nullable=False)
+    url_s = db.Column(db.Text, nullable=False)
+    url_sq = db.Column(db.Text, nullable=False)
+    url_t = db.Column(db.Text, nullable=False)
+    url_z = db.Column(db.Text, nullable=False)
+    flickr_url = db.Column(db.Text, nullable=False)
 
 
 class Lophoto(db.Model):

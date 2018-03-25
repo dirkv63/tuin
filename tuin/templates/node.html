@@ -4,13 +4,20 @@
 {% block page_content %}
 <div class="row">
     <div class="col-md-9">
-    {{ macros.bc(breadcrumb) }}
         <h1>
             {{ node.content.title }}
         </h1>
-        <div class="nodecontent">
-            {{ node.content.body|safe }}
-        </div>
+        {% if node.type == "book" %}
+            {{ macros.bc(breadcrumb) }}
+            <div class="nodecontent">
+                {{ node.content.body|safe }}
+            </div>
+        {% elif node.type == "flickr" %}
+            {{ macros.taxonomy(node.terms|terms_sorted) }}
+            <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
+                <img src="{{node.flickr.flickrdetails.url_m}}">
+            </a>
+        {% endif %}
         {% if node.children %}
         <hr>
         <ul class="childrenlist">

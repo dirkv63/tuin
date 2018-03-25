@@ -105,6 +105,10 @@ def nodes_sorted(nodes):
     return sorted(nodes, key=lambda node: node.created, reverse=True)[:10]
 
 
+def terms_sorted(terms):
+    return sorted(terms, key=lambda term: (term.vocabularies.name, term.name))
+
+
 URL_REGEX = re.compile(r'''((?:mailto:|ftp://|http://|https://)[^ <>'"{}|\\^`[\]]*)''')
 
 

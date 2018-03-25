@@ -42,6 +42,7 @@ def create_app(config_name):
     app.jinja_env.filters['children_sorted'] = my_env.children_sorted
     app.jinja_env.filters['fix_urls'] = my_env.altfix_urls
     app.jinja_env.filters['nodes_sorted'] = my_env.nodes_sorted
+    app.jinja_env.filters['terms_sorted'] = my_env.terms_sorted
 
     # configure production logging of errors
     """
