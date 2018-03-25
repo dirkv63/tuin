@@ -101,6 +101,10 @@ def children_sorted(children):
     return sorted(children, key=lambda child: child.content.title)
 
 
+def nodes_sorted(nodes):
+    return sorted(nodes, key=lambda node: node.created, reverse=True)[:10]
+
+
 URL_REGEX = re.compile(r'''((?:mailto:|ftp://|http://|https://)[^ <>'"{}|\\^`[\]]*)''')
 
 

@@ -27,10 +27,20 @@
                             <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('main.book', id=1) }}">Tuinplanten</a></li>
-                            <li><a href="{{ url_for('main.book', id=109) }}">Snoeitechnieken en Onderhoud</a></li>
-                            <li><a href="{{ url_for('main.book', id=131) }}">Vissen</a></li>
-                            <li><a href="{{ url_for('main.book', id=169) }}">Kalender</a></li>
+                            <li><a href="{{ url_for('main.node', id=1) }}">Tuinplanten</a></li>
+                            <li><a href="{{ url_for('main.node', id=109) }}">Snoeitechnieken en Onderhoud</a></li>
+                            <li><a href="{{ url_for('main.node', id=131) }}">Vissen</a></li>
+                            <li><a href="{{ url_for('main.node', id=169) }}">Kalender</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            Foto's
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('main.vocabulary', id=3) }}">Planten</a></li>
+                            <li><a href="{{ url_for('main.vocabulary', id=2) }}">Plaats</a></li>
                         </ul>
                     </li>
                  </ul>

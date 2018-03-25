@@ -4,7 +4,7 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
-from tuin.db_model import User
+from tuin.db_model import *
 # from lib import my_env
 from config import *
 
@@ -48,12 +48,12 @@ def pwd_update():
 @main.route('/')
 @login_required
 def index():
-    return book(12)
+    return node(12)
 
 
-@main.route('/book/<id>')
+@main.route('/node/<id>')
 @login_required
-def book(id):
+def node(id):
     node_obj = ds.get_node_attribs(id)
     bc = ds.get_breadcrumb(id)
     params = dict(
@@ -63,6 +63,28 @@ def book(id):
     )
     ds.History.add(id)
     return render_template('node.html', **params)
+
+
+@main.route('/taxonomy/<id>')
+@login_required
+def taxonomy(id):
+    term = Term.query.filter_by(id=id).one()
+    params = dict(
+        term=term,
+        searchForm=Search()
+    )
+    return render_template("taxonomy.html", **params)
+
+
+@main.route('/vocabulary/<id>')
+@login_required
+def vocabulary(id):
+    voc = Vocabulary.query.filter_by(id=id).first()
+    params = dict(
+        voc=voc,
+        searchForm=Search()
+    )
+    return render_template('vocabulary.html', **params)
 
 
 @main.route('/search', methods=['GET', 'POST'])

@@ -16,7 +16,7 @@
         <ul class="childrenlist">
             {% for child in node.children|children_sorted %}
             <li>{% if child.children %} &raquo; {% else %} &bull; {% endif %}
-                <a href="{{ url_for('main.book', id=child.id) }}">{{ child.content.title }}</a></li>
+                <a href="{{ url_for('main.node', id=child.id) }}">{{ child.content.title }}</a></li>
             {% endfor %}
         </ul>
         {% endif %}

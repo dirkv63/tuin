@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+        <h1>
+            {{ term.name }}
+        </h1>
+        <ul class="taxonomy">
+            {% for node in term.nodes|nodes_sorted %}
+                <li>
+                    <a href="{{ url_for('main.node', id=node.id) }}">{{ node.content.title }}</a>
+                    ({{ node.type }})
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

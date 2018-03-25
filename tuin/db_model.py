@@ -53,6 +53,7 @@ class Node(db.Model):
     created = db.Column(db.Integer, nullable=False)
     modified = db.Column(db.Integer, nullable=False)
     revcnt = db.Column(db.Integer)
+    type = db.Column(db.Text)
     children = db.relationship("Node",
                                backref=db.backref('parent', remote_side=[id])
                                )
@@ -154,6 +155,7 @@ class Term(db.Model):
     vocabulary_id = db.Column(db.Integer, db.ForeignKey("vocabulary.id"), nullable=False)
     name = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
+    # nodes = db.relationship("Node", secondary="taxonomy", backref="terms")
 
 
 class Vocabulary(db.Model):
@@ -165,7 +167,7 @@ class Vocabulary(db.Model):
     name = db.Column(db.Text, nullable=False, unique=True)
     description = db.Column(db.Text)
     weight = db.Column(db.Integer)
-    terms = db.relationship("Term", backref="vocabularies")
+    terms = db.relationship("Term", backref="vocabularies", order_by="Term.name")
 
 
 class User(UserMixin, db.Model):
@@ -312,6 +314,18 @@ def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
         if node.nid != exclnid:
             tree = get_tree(parent_id=node.nid, tree=tree, level=level, exclnid=exclnid)
     return tree
+
+
+def get_voc_name(id):
+    """
+    This method will return the vocabulary name for this ID.
+
+    :param id: ID of the vocabulary
+
+    :return: Name of the vocabulary (Plaats or Planten)
+    """
+    voc = Vocabulary.query.filter_by(id=id)
+    return voc
 
 
 def search_term(term):
