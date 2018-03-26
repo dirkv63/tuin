@@ -6,18 +6,25 @@
     <div class="col-md-9">
         <h1>
             {{ node.content.title }}
+            <small>{{ node.created|datestamp }}</small>
         </h1>
         {% if node.type == "book" %}
             {{ macros.bc(breadcrumb) }}
-            <div class="nodecontent">
-                {{ node.content.body|safe }}
-            </div>
-        {% elif node.type == "flickr" %}
-            {{ macros.taxonomy(node.terms|terms_sorted) }}
+        {% endif %}
+        {{ macros.taxonomy(node.terms|terms_sorted) }}
+        {% if node.type == "flickr" %}
             <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
                 <img src="{{node.flickr.flickrdetails.url_m}}">
             </a>
+        {% elif node.type == "lophoto" %}
+            {{ macros.taxonomy(node.terms|terms_sorted) }}
+            <img src="{{ url_for('static', filename=node.lophoto.filename) }}">
         {% endif %}
+        <div class="nodecontent">
+            {% if node.content.body is not none %}
+                {{ node.content.body|safe }}
+            {% endif %}
+        </div>
         {% if node.children %}
         <hr>
         <ul class="childrenlist">

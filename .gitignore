@@ -15,3 +15,4 @@ __pycache__/
 temp/*
 client_secrets.json
 settings.yaml
+*/static/*
