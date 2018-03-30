@@ -306,6 +306,21 @@ def get_node_list(order="created"):
     return node_list
 
 
+def get_pics(page=1):
+    """
+    This method will get the picture URLs for the page specified.
+
+
+    :param page: Page number. Each page has 16 pictures, from most recent to oldest.
+
+    :return:
+    """
+    page_size = 16
+    node_order = Node.created.asc()
+    nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order).limit(page_size)
+    return nodes
+
+
 def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     """
     This method will get the full node tree sorted on title and depth first in a recursive way

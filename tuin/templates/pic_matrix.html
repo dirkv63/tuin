@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+        <table>
+        {% for node in nodes %}
+            {% if loop.index is divisibleby 4 %}
+                <tr>
+            {% endif %}
+                <td>
+                    {% if node.type == "flickr" %}
+                        <img src="{{node.flickr.flickrdetails.url_q}}" class="img-responsive lophoto">
+                    {% else %}
+                        <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square">
+                    {% endif %}
+                </td>
+            {% if (loop.index + 3) is divisibleby 4 %}
+                </tr>
+            {% endif %}
+        {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

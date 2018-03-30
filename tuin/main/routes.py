@@ -48,7 +48,12 @@ def pwd_update():
 @main.route('/')
 @login_required
 def index():
-    return node(12)
+    params = dict(
+        nodes=ds.get_pics(),
+        searchForm=Search()
+    )
+    return render_template("pic_matrix.html", **params)
+    # return node(12)
 
 
 @main.route('/node/<id>')

@@ -9,16 +9,19 @@
             <small>{{ node.created|datestamp }}</small>
         </h1>
         {% if node.type == "book" %}
-            {{ macros.bc(breadcrumb) }}
+            {% if breadcrumb|length > 0 %}
+                {{ macros.bc(breadcrumb) }}
+            {% endif %}
         {% endif %}
-        {{ macros.taxonomy(node.terms|terms_sorted) }}
+        {% if node.terms|length > 0 %}
+            {{ macros.taxonomy(node.terms|terms_sorted) }}
+        {% endif %}
         {% if node.type == "flickr" %}
             <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
-                <img src="{{node.flickr.flickrdetails.url_m}}">
+                <img src="{{node.flickr.flickrdetails.url_c}}" class="img-responsive lophoto">
             </a>
         {% elif node.type == "lophoto" %}
-            {{ macros.taxonomy(node.terms|terms_sorted) }}
-            <img src="{{ url_for('static', filename=node.lophoto.filename) }}">
+            <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="img-responsive lophoto">
         {% endif %}
         <div class="nodecontent">
             {% if node.content.body is not none %}
