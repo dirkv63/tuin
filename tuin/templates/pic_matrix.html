@@ -4,23 +4,38 @@
 {% block page_content %}
 <div class="row">
     <div class="col-md-9">
-        <table>
-        {% for node in nodes %}
-            {% if loop.index is divisibleby 4 %}
+        <table class="table table-bordered">
+        {% for node in nodes.items %}
+            {% if (loop.index + 3) is divisibleby 4 %}
                 <tr>
             {% endif %}
                 <td>
+                    <a href="{{ url_for('main.node', id=node.id ) }}">
+                        {{ node.content.title|truncate(18) }}
+                    </a>
+                    <br>
                     {% if node.type == "flickr" %}
-                        <img src="{{node.flickr.flickrdetails.url_q}}" class="img-responsive lophoto">
+                        <img src="{{node.flickr.flickrdetails.url_q}}" class="square center-block">
                     {% else %}
-                        <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square">
+                        <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square center-block">
                     {% endif %}
+                    {{ node.created|datestamp }}
                 </td>
-            {% if (loop.index + 3) is divisibleby 4 %}
+            {% if loop.index is divisibleby 4 %}
                 </tr>
             {% endif %}
         {% endfor %}
         </table>
+        {% if nodes.has_prev %}
+            <a href="{{ url_for('main.index', page=nodes.prev_num) }}">&lt;&lt; Newer nodes</a>
+        {% else %}
+            &lt;&lt; Newer nodes
+        {% endif %} |
+        {% if nodes.has_next %}
+            <a href="{{ url_for('main.index', page=nodes.next_num) }}">Older nodes &gt;&gt;</a>
+        {% else %}
+            Older nodes &gt;&gt;
+        {% endif %}
     </div>
     <div class="col-md-3 text-center">
         <div class="hidden-sm hidden-xs marsu">

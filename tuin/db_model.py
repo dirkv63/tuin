@@ -316,8 +316,8 @@ def get_pics(page=1):
     :return:
     """
     page_size = 16
-    node_order = Node.created.asc()
-    nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order).limit(page_size)
+    node_order = Node.created.desc()
+    nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
     return nodes
 
 
