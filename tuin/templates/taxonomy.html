@@ -7,14 +7,32 @@
         <h1>
             {{ term.name }}
         </h1>
-        <ul class="taxonomy">
             {% for node in term.nodes|nodes_sorted %}
-                <li>
+                <h3>
                     <a href="{{ url_for('main.node', id=node.id) }}">{{ node.content.title }}</a>
-                    ({{ node.type }})
-                </li>
+                </h3>
+                {% if node.type == "book" %}
+                    {% if breadcrumb|length > 0 %}
+                        BC: {{ macros.bc(breadcrumb) }}
+                    {% endif %}
+                {% endif %}
+                {% if node.terms|length > 0 %}
+                    {{ macros.taxonomy(node.terms|terms_sorted) }}
+                {% endif %}
+                {% if node.type == "flickr" %}
+                    <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
+                        <img src="{{node.flickr.flickrdetails.url_c}}" class="img-responsive square">
+                    </a>
+                {% elif node.type == "lophoto" %}
+                    <img src="{{ url_for('static', filename=node.lophoto.filename) }}"
+                         class="img-responsive square">
+                {% endif %}
+                {% if node.content.body is not none %}
+                    {{ node.content.body|safe }}
+                {% endif %}
+                <br><small>Posted: {{ node.created|datestamp }} ({{ node.type }})</small>
+                <hr>
             {% endfor %}
-        </ul>
     </div>
     <div class="col-md-3 text-center">
         <div class="hidden-sm hidden-xs marsu">

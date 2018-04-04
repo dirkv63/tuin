@@ -20,5 +20,6 @@ a:visited 		{ color: #800080; }
 .nodecontent    { padding: 25px 0px 20px; }
 .childrenlist   { list-style: none }
 .lophoto        { max-height: 600px; width=auto }
-.square         { width: 160px; height: 160px; object-fit: fill }
+.smallphoto     { max-height: 200px; width=auto }
+.square         { width: 140px; height: 140px; object-fit: fill }
 .matrix         { padding: 150px; }

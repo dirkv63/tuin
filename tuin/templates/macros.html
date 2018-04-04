@@ -8,9 +8,9 @@
 
 {% macro taxonomy(terms) %}
     <ol class="breadcrumb">
-    {% for term in terms: %}
-        <li class="breadcrumb-item"><a href="{{ url_for('main.taxonomy', id=term.id) }}">{{ term.name }}</a></li>
-    {% endfor %}
+        {% for term in terms: %}
+            <li class="breadcrumb-item"><a href="{{ url_for('main.taxonomy', id=term.id) }}">{{ term.name }}</a></li>
+        {% endfor %}
     </ol>
 {% endmacro %}
 

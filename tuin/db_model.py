@@ -310,12 +310,10 @@ def get_pics(page=1):
     """
     This method will get the picture URLs for the page specified.
 
-
-    :param page: Page number. Each page has 16 pictures, from most recent to oldest.
+    :param page: Page number. Each page has ITEMS_PER_PAGE (see config.py) pictures, from most recent to oldest.
 
     :return:
     """
-    page_size = 16
     node_order = Node.created.desc()
     nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
     return nodes

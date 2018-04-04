@@ -46,10 +46,11 @@ def pwd_update():
 
 
 @main.route('/')
+@main.route('/<page>')
 @login_required
-def index(page=5):
+def index(page=1):
     params = dict(
-        nodes=ds.get_pics().paginate(page, 16, False),
+        nodes=ds.get_pics().paginate(int(page), ITEMS_PER_PAGE, False),
         searchForm=Search()
     )
     return render_template("pic_matrix.html", **params)
