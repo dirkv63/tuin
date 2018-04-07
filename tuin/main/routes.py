@@ -56,6 +56,16 @@ def index(page=1):
     return render_template("pic_matrix.html", **params)
 
 
+@main.route('/archive')
+@login_required
+def archive():
+    params = dict(
+        nodes = ds.get_archive(),
+        searchForm=Search()
+    )
+    return render_template("archive.html", **params)
+
+
 @main.route('/node/<id>')
 @login_required
 def node(id):
@@ -79,6 +89,7 @@ def taxonomy(id):
         searchForm=Search()
     )
     return render_template("taxonomy.html", **params)
+
 
 
 @main.route('/vocabulary/<id>')
