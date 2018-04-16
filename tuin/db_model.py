@@ -177,7 +177,7 @@ class Term(db.Model):
     vocabulary_id = db.Column(db.Integer, db.ForeignKey("vocabulary.id"), nullable=False)
     name = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
-    # nodes = db.relationship("Node", secondary="taxonomy", backref="terms")
+    # nodes = db.relationship("Node", secondary="taxonomy", backref=db.backref("terms", order_by="desc(Node.created)"))
 
 
 class Vocabulary(db.Model):
@@ -316,6 +316,22 @@ def get_pics(page=1):
     """
     node_order = Node.created.desc()
     nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
+    return nodes
+
+
+def get_pics_tax(tax=1, page=1):
+    """
+    This method will get the picture URLs for the page and taxonomy term specified.
+
+    :param tax: Taxonomy term ID
+
+    :param page: Page number. Each page has ITEMS_PER_PAGE (see config.py) pictures, from most recent to oldest.
+
+    :return:
+    """
+    node_order = Node.created.desc()
+    nodes = Node.query.filter((Node.terms.id == tax)).order_by(node_order)
+    # nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
     return nodes
 
 

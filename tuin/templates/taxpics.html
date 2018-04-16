@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+        <h1>{{ title }}</h1>
+        <table class="table table-bordered">
+        {% for node in nodes %}
+            {% if (loop.index + 3) is divisibleby 4 %}
+                <tr>
+            {% endif %}
+                <td>
+                    <a href="{{ url_for('main.node', id=node.id ) }}">
+                        {{ node.content.title|truncate(18) }}
+                    </a>
+                    <br>
+                    {% if node.type == "flickr" %}
+                        <img src="{{node.flickr.flickrdetails.url_q}}" class="square center-block">
+                    {% else %}
+                        <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square center-block">
+                    {% endif %}
+                    {{ node.created|datestamp }}
+                </td>
+            {% if loop.index is divisibleby 4 %}
+                </tr>
+            {% endif %}
+        {% endfor %}
+        </table>
+        {% if page|int > 1 %}
+            <a href="{{ url_for('main.taxpics', page=page|int-1, id=term_id) }}">&lt;&lt; Newer nodes</a>
+        {% else %}
+            &lt;&lt; Newer nodes
+        {% endif %} |
+        {% if page|int < max_page %}
+            <a href="{{ url_for('main.taxpics', page=page|int+1, id=term_id) }}">Older nodes &gt;&gt;</a>
+        {% else %}
+            Older nodes &gt;&gt;
+        {% endif %}
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

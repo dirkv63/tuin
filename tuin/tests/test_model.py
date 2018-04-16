@@ -20,6 +20,7 @@ class TestModelGraph(unittest.TestCase):
     def tearDown(self):
         self.app_ctx.pop()
 
+    """
     def test_get_node_attribs(self):
         # Get a valid node
         node_id = 150
@@ -43,6 +44,22 @@ class TestModelGraph(unittest.TestCase):
         print("Term: " + term.name)
         for node in term.nodes:
             print(node.content.title)
+    """
+
+    def test_get_tax_pics(self):
+        # Get a term
+        term_id = 66
+        node_order = Node.created.desc()
+        term = Term.query.filter_by(id=term_id).one()
+        print(len(term.nodes))
+        node_arr = [node for node in term.nodes if ( node.type == "flickr" or node.type == "lophoto")][48:64]
+        print(len(node_arr))
+        """   
+        for node in term.nodes:
+            print(node.content.title)
+            print(node.created)
+        """
+
 
 if __name__ == "__main__":
     unittest.main()

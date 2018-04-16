@@ -9,7 +9,7 @@
         </h1>
         <ul class="taxonomy">
             {% for term in voc.terms %}
-                <li><a href="{{ url_for('main.taxonomy', id=term.id) }}">{{ term.name }}</a></li>
+                <li><a href="{{ url_for('main.taxpics', id=term.id) }}">{{ term.name }}</a></li>
             {% endfor %}
         </ul>
     </div>

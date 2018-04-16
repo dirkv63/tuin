@@ -91,6 +91,26 @@ def taxonomy(id):
     return render_template("taxonomy.html", **params)
 
 
+@main.route('/taxpics/<id>')
+@main.route('/taxpics/<id>/<page>')
+@login_required
+def taxpics(id, page=1):
+    term = Term.query.filter_by(id=id).one()
+    start = (int(page)-1) * ITEMS_PER_PAGE
+    end = int(page) * ITEMS_PER_PAGE
+    nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
+    sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
+    max_page = (len(sel_nodes) // ITEMS_PER_PAGE) + 1
+    params = dict(
+        term_id=id,
+        title=term.name,
+        nodes=sel_nodes[start:end],
+        page=page,
+        max_page = max_page,
+        searchForm=Search()
+    )
+    return render_template("taxpics.html", **params)
+
 
 @main.route('/vocabulary/<id>')
 @login_required
