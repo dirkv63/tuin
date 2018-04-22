@@ -4,6 +4,7 @@
 {% block page_content %}
 <div class="row">
     <div class="col-md-9">
+        <h1>{{ title }} <small>Page {{ page }}</small></h1>
         <table class="table table-bordered">
         {% for node in nodes.items %}
             {% if (loop.index + 3) is divisibleby 4 %}

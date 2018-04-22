@@ -51,7 +51,9 @@ def pwd_update():
 def index(page=1):
     params = dict(
         nodes=ds.get_pics().paginate(int(page), ITEMS_PER_PAGE, False),
-        searchForm=Search()
+        searchForm=Search(),
+        title="Overzicht",
+        page=page
     )
     return render_template("pic_matrix.html", **params)
 
@@ -111,6 +113,31 @@ def taxpics(id, page=1):
     )
     return render_template("taxpics.html", **params)
 
+@main.route("/timeline/<term_id>/<datestamp>")
+@login_required
+def timeline(term_id, datestamp):
+    # Get node selected
+    node = Node.query.filter_by(created=datestamp).one()
+    # Then find term and get node pictures related to the term and in reverse created order (youngest first)
+    term = Term.query.filter_by(id=term_id).one()
+    nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
+    sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
+    print("Selected notes: {sn}".format(sn=sel_nodes))
+    print("Node to find: {n}".format(n=node))
+    # Find index of the requested node
+    pos = sel_nodes.index(node)
+    params = dict(
+        term_id=term_id,
+        title=term.name,
+        node=node,
+        searchForm=Search()
+    )
+    if pos > 0:
+        params["prev_node"] = sel_nodes[pos-1]
+    print("Pos: {pos} - length: {lsn}".format(pos=pos, lsn=len(sel_nodes)))
+    if len(sel_nodes) > (pos+1):
+        params["next_node"] = sel_nodes[pos+1]
+    return render_template("timeline.html", **params)
 
 @main.route('/vocabulary/<id>')
 @login_required

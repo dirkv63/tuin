@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+        <h1>
+            {{title }}
+            <small>{{ node.created|datestamp }}</small>
+        </h1>
+        {% if node.terms|length > 0 %}
+            {{ macros.taxonomy(node.terms|terms_sorted) }}
+        {% endif %}
+        {% if prev_node is defined %}
+            <a href="{{ url_for('main.timeline', term_id=term_id, datestamp=prev_node.created) }}">
+                << {{ prev_node.created|datestamp }}
+            </a>
+        {% else %}
+            << meest recente foto
+        {% endif %} |
+        {% if next_node is defined %}
+            <a href="{{ url_for('main.timeline', term_id=term_id, datestamp=next_node.created) }}">
+                {{ next_node.created|datestamp }} >>
+            </a>
+        {% else %}
+            oudste foto >>
+        {% endif %}
+        {% if node.type == "flickr" %}
+            <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
+                <img src="{{node.flickr.flickrdetails.url_c}}" class="img-responsive lophoto">
+            </a>
+        {% elif node.type == "lophoto" %}
+            <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="img-responsive lophoto">
+        {% endif %}
+        <div class="nodecontent">
+            {% if node.content.body is not none %}
+                {{ node.content.body|safe }}
+            {% endif %}
+        </div>
+
+
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

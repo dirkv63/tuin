@@ -51,10 +51,15 @@ class TestModelGraph(unittest.TestCase):
         term_id = 66
         node_order = Node.created.desc()
         term = Term.query.filter_by(id=term_id).one()
+        print(term.nodes)
+        node = Node.query.filter_by(created=1433619189).one()
+        print(node)
+        print(term.nodes.index(node))
+        print(len(term.nodes))
+        """   
         print(len(term.nodes))
         node_arr = [node for node in term.nodes if ( node.type == "flickr" or node.type == "lophoto")][48:64]
         print(len(node_arr))
-        """   
         for node in term.nodes:
             print(node.content.title)
             print(node.created)
