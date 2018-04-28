@@ -7,9 +7,18 @@
         <h1>
             {{ voc.name }}
         </h1>
+        <h2>{{ target }}</h2>
         <ul class="taxonomy">
             {% for term in voc.terms %}
-                <li><a href="{{ url_for('main.taxpics', id=term.id) }}">{{ term.name }}</a></li>
+                <li>
+                    {% if target == 'taxonomy' %}
+                        <a href="{{ url_for('main.taxonomy', id=term.id) }}">
+                    {% else %}
+                        <a href="{{ url_for('main.taxpics', id=term.id) }}">
+                    {% endif %}
+                        {{ term.name }}
+                    </a>
+                </li>
             {% endfor %}
         </ul>
     </div>

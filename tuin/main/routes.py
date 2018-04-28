@@ -83,11 +83,21 @@ def node(id):
 
 
 @main.route('/taxonomy/<id>')
+@main.route('/taxonomy/<id>/<page>')
 @login_required
-def taxonomy(id):
+def taxonomy(id, page=1):
     term = Term.query.filter_by(id=id).one()
+    start = (int(page)-1) * ITEMS_PER_PAGE
+    end = int(page) * ITEMS_PER_PAGE
+    nodes = [node for node in term.nodes]
+    sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
+    max_page = (len(sel_nodes) // ITEMS_PER_PAGE) + 1
     params = dict(
-        term=term,
+        term_id=id,
+        title=term.name,
+        nodes=sel_nodes[start:end],
+        page=page,
+        max_page=max_page,
         searchForm=Search()
     )
     return render_template("taxonomy.html", **params)
@@ -139,13 +149,14 @@ def timeline(term_id, datestamp):
         params["next_node"] = sel_nodes[pos+1]
     return render_template("timeline.html", **params)
 
-@main.route('/vocabulary/<id>')
+@main.route('/vocabulary/<id>/<target>')
 @login_required
-def vocabulary(id):
+def vocabulary(id, target):
     voc = Vocabulary.query.filter_by(id=id).first()
     params = dict(
         voc=voc,
-        searchForm=Search()
+        searchForm=Search(),
+        target=target
     )
     return render_template('vocabulary.html', **params)
 

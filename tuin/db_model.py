@@ -254,6 +254,23 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+def get_archive():
+    """
+    This function will collect the articles by month. SQL query:
+    select count(*), strftime("%Y-%m", datetime(created, 'unixepoch')) from node
+    group by strftime("%Y-%m", datetime(created, 'unixepoch'))
+    order by created desc
+
+    :return: Year - month and number of nodes created in this month.
+    """
+    total_articles_query = db.func.count(Node.id).label('total_articles')
+    year_time = db.func.strftime('%Y', Node.created).label('year')
+    month_time = db.func.strftime('%m', Node.created).label('month')
+    query = db.session.query(Node, year_time, month_time, total_articles_query).group_by(year_time, month_time)
+    sorted_query = query.order_by(Node.created.desc())
+    return sorted_query.all()
+
+
 def get_breadcrumb(nid, bc=None):
     """
     This function will get the breadcrumb for the node. It will find the parent's node until root
