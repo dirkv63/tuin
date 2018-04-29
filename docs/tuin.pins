@@ -1,0 +1,213 @@
+; Sun Apr 29 22:59:10 CEST 2018
+; 
+;+ (version "3.5")
+;+ (build "Build 660")
+
+([tuin_Class10] of  Route
+
+	(attrib "page")
+	(called_by_layout [tuin_Class9])
+	(calls_templated [tuin_Class13])
+	(description "Default route for the website.")
+	(name "index")
+	(path
+		"/"
+		"/<page>"))
+
+([tuin_Class13] of  Template
+
+	(attrib
+		"nodes"
+		"page"
+		"title"
+		"searchForm")
+	(called_by_route [tuin_Class10])
+	(calls_route_from_temp [tuin_Class16])
+	(description "Show the nodes in 4x4 matrix of pictures. The nodes need to be type flickr or lophoto.\nPagination is incluced.")
+	(name "pic_matrix.html"))
+
+([tuin_Class16] of  Route
+
+	(attrib "id")
+	(called_by_layout
+		[tuin_Class26]
+		[tuin_Class27]
+		[tuin_Class28]
+		[tuin_Class29])
+	(called_by_template
+		[tuin_Class13]
+		[tuin_Class18]
+		[tuin_Class20])
+	(calls_templated [tuin_Class18])
+	(description "Collects information for a single node.")
+	(name "node")
+	(path "/node/<id>"))
+
+([tuin_Class18] of  Template
+
+	(attrib
+		"node"
+		"breadcrumb"
+		"searchForm")
+	(called_by_route [tuin_Class16])
+	(calls_route_from_temp
+		[tuin_Class16]
+		[tuin_Class19])
+	(description "Displays information for a single node, for every node type.\nNode title and content are shown, and separate threatment depending on type book, flickr or lophoto.\nBreadcrumb is required for book nodes. Taxonomy is added if available.\nFor flickr nodes, the picture will link to Flickr website.\nBook node children will be linked using node.")
+	(name "node.html"))
+
+([tuin_Class19] of  Route
+
+	(attrib
+		"id"
+		"page")
+	(called_by_template
+		[tuin_Class18]
+		[tuin_Class20]
+		[tuin_Class31])
+	(calls_templated [tuin_Class20])
+	(description "For a specific taxonomy term id the lophoto or flickr pictures associated to this term are collected. \nThen the pictures related to the requested page are extracted, and the maximum number of pages is calculated.")
+	(name "taxpics")
+	(path
+		"/taxpics/<id>"
+		"/taxpics/<id>/<page>"))
+
+([tuin_Class20] of  Template
+
+	(attrib
+		"term_id"
+		"title"
+		"nodes"
+		"page"
+		"max_page"
+		"searchForm")
+	(called_by_route [tuin_Class19])
+	(calls_route_from_temp
+		[tuin_Class16]
+		[tuin_Class19]
+		[tuin_Class21])
+	(description "Shows the pictures related to a taxonomy term in a 4x4 matrix.\nThe node title for each of the pictures links to the node function.\nThe picture date links to the timeline for this term in the taxonomy.\nToDo: investigate if this needs to be consolidated with pic_matrix.html (if there is a solution for the link to the timeline.")
+	(name "taxpics.html"))
+
+([tuin_Class21] of  Route
+
+	(attrib
+		"term_id"
+		"datestamp")
+	(called_by_template
+		[tuin_Class20]
+		[tuin_Class22])
+	(calls_templated [tuin_Class22])
+	(description "This function collects information to show pictures for a taxonomy term in a timeline fashion.")
+	(name "timeline")
+	(path "/timeline/<term_id>/<datestamp>"))
+
+([tuin_Class22] of  Template
+
+	(attrib
+		"term_id"
+		"title"
+		"node"
+		"searchForm"
+		"prev_node"
+		"next_node")
+	(called_by_route [tuin_Class21])
+	(calls_route_from_temp [tuin_Class21])
+	(description "This template will show the picture in a timeline fashion. If available, the link to the previous picture and the next picture in the timeline for this taxonomy term will be show.")
+	(name "timeline.html"))
+
+([tuin_Class23] of  Layout
+
+	(description "Parent item for the books.")
+	(layout_children
+		[tuin_Class26]
+		[tuin_Class27]
+		[tuin_Class28]
+		[tuin_Class29])
+	(name "2. Informatie"))
+
+([tuin_Class24] of  Layout
+
+	(description "Parent item for the vocabulary selection list for photos.\nPhotos will come in 4x4 matrix.")
+	(name "3. Foto's"))
+
+([tuin_Class25] of  Layout
+
+	(description "Parent item list for the berichten: vocabulary list and archive.")
+	(name "4. Berichten"))
+
+([tuin_Class26] of  Layout
+
+	(calls_route [tuin_Class16])
+	(description "Calls book Tuinplanten")
+	(name "2.1 Tuinplanten")
+	(parent_layout [tuin_Class23]))
+
+([tuin_Class27] of  Layout
+
+	(calls_route [tuin_Class16])
+	(description "Links to book Snoeitechnieken en Onderhoud.")
+	(name "2.2 Snoeitechnieken en Onderhoud")
+	(parent_layout [tuin_Class23]))
+
+([tuin_Class28] of  Layout
+
+	(calls_route [tuin_Class16])
+	(description "Calls book Vissen.")
+	(name "2.3 Vissen")
+	(parent_layout [tuin_Class23]))
+
+([tuin_Class29] of  Layout
+
+	(calls_route [tuin_Class16])
+	(description "Calls book Kalender")
+	(name "2.4 Kalender")
+	(parent_layout [tuin_Class23]))
+
+([tuin_Class30] of  Route
+
+	(attrib
+		"id"
+		"target")
+	(calls_templated [tuin_Class31])
+	(description "Collects the vocabulary item that has been selected.\nThe URL remembers the calling source.\nDepending on the calling template, the called template vocabulary.html will behave differently.")
+	(name "vocabulary")
+	(path "/vocabulary/<id>/<target>"))
+
+([tuin_Class31] of  Template
+
+	(attrib
+		"voc"
+		"target"
+		"searchForm")
+	(called_by_route [tuin_Class30])
+	(calls_route_from_temp
+		[tuin_Class19]
+		[tuin_Class32])
+	(description "This template will show the list of taxonomy terms associated with a vocabulary.\nIf the calling template was taxonomy, it will link to taxonomy function. Otherwise it will link to taxpics function.")
+	(name "vocabulary.html"))
+
+([tuin_Class32] of  Route
+
+	(attrib
+		"id"
+		"page")
+	(called_by_template [tuin_Class31])
+	(calls_templated [tuin_Class33])
+	(description "This function will collect all nodes related to a taxonomy term to show the info in a node list format. All node types are collected and the output is a list-like format.")
+	(name "taxonomy")
+	(path
+		"/taxonomy/<id>"
+		"/taxonomy/<id>/<page>"))
+
+([tuin_Class33] of  Template
+
+	(called_by_route [tuin_Class32])
+	(description "TO BE COMPLETED.")
+	(name "node_list"))
+
+([tuin_Class9] of  Layout
+
+	(calls_route [tuin_Class10])
+	(description "Home layout element for the website.")
+	(name "1. Tuin"))

@@ -1,0 +1,171 @@
+; Sun Apr 29 22:59:10 CEST 2018
+; 
+;+ (version "3.5")
+;+ (build "Build 660")
+
+
+(defclass %3ACLIPS_TOP_LEVEL_SLOT_CLASS "Fake class to save top-level slot information"
+	(is-a USER)
+	(role abstract)
+	(multislot called_by_route
+;+		(comment "Describes what route function did call the template")
+		(type INSTANCE)
+;+		(allowed-classes Route)
+;+		(inverse-slot calls_templated)
+		(create-accessor read-write))
+	(single-slot name_
+;+		(comment "Name of the template.")
+		(type STRING)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(multislot called_by_layout
+;+		(comment "The layout element that calls this route function.")
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+;+		(inverse-slot calls_route)
+		(create-accessor read-write))
+	(multislot calls_templated
+;+		(comment "Route function that calls the template.")
+		(type INSTANCE)
+;+		(allowed-classes Template)
+;+		(inverse-slot called_by_route)
+		(create-accessor read-write))
+	(single-slot description
+;+		(comment "Description of the template.")
+		(type STRING)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(single-slot parent_layout
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+;+		(cardinality 0 1)
+;+		(inverse-slot layout_children)
+		(create-accessor read-write))
+	(multislot called_by_template
+;+		(comment "Pointer to the template that calls this route.")
+		(type INSTANCE)
+;+		(allowed-classes Template)
+;+		(inverse-slot calls_route_from_temp)
+		(create-accessor read-write))
+	(multislot attrib
+;+		(comment "Attribute for the function or the template.")
+		(type STRING)
+		(create-accessor read-write))
+	(single-slot calls_route
+;+		(comment "The route function called by this Layout element.")
+		(type INSTANCE)
+;+		(allowed-classes Route)
+;+		(cardinality 0 1)
+;+		(inverse-slot called_by_layout)
+		(create-accessor read-write))
+	(multislot calls_route_from_temp
+		(type INSTANCE)
+;+		(allowed-classes Route)
+;+		(inverse-slot called_by_template)
+		(create-accessor read-write))
+	(multislot layout_children
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+;+		(inverse-slot parent_layout)
+		(create-accessor read-write))
+	(single-slot tuin_Class14
+		(type STRING)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(multislot path
+;+		(comment "The path that can be used to call the function.")
+		(type STRING)
+		(create-accessor read-write)))
+
+(defclass Template "Collection of Template files."
+	(is-a USER)
+	(role concrete)
+	(multislot calls_route_from_temp
+		(type INSTANCE)
+;+		(allowed-classes Route)
+		(create-accessor read-write))
+	(single-slot description
+;+		(comment "Description of the template.")
+		(type STRING)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(multislot called_by_route
+;+		(comment "Describes what route function did call the template")
+		(type INSTANCE)
+;+		(allowed-classes Route)
+		(create-accessor read-write))
+	(single-slot name_
+;+		(comment "Name of the template.")
+		(type STRING)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(multislot attrib
+;+		(comment "Attribute for the function or the template.")
+		(type STRING)
+		(create-accessor read-write)))
+
+(defclass Route "Collection of the route functions."
+	(is-a USER)
+	(role concrete)
+	(multislot calls_templated
+;+		(comment "Route function that calls the template.")
+		(type INSTANCE)
+;+		(allowed-classes Template)
+		(create-accessor read-write))
+	(single-slot description
+;+		(comment "Description of the template.")
+		(type STRING)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(single-slot name_
+;+		(comment "Name of the template.")
+		(type STRING)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(multislot called_by_layout
+;+		(comment "The layout element that calls this route function.")
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+		(create-accessor read-write))
+	(multislot called_by_template
+;+		(comment "Pointer to the template that calls this route.")
+		(type INSTANCE)
+;+		(allowed-classes Template)
+		(create-accessor read-write))
+	(multislot path
+;+		(comment "The path that can be used to call the function.")
+		(type STRING)
+		(create-accessor read-write))
+	(multislot attrib
+;+		(comment "Attribute for the function or the template.")
+		(type STRING)
+		(create-accessor read-write)))
+
+(defclass Layout "Layout of the application."
+	(is-a USER)
+	(role concrete)
+	(single-slot description
+;+		(comment "Description of the template.")
+		(type STRING)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(multislot layout_children
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+		(create-accessor read-write))
+	(single-slot name_
+;+		(comment "Name of the template.")
+		(type STRING)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot parent_layout
+		(type INSTANCE)
+;+		(allowed-classes Layout)
+;+		(cardinality 0 1)
+		(create-accessor read-write))
+	(single-slot calls_route
+;+		(comment "The route function called by this Layout element.")
+		(type INSTANCE)
+;+		(allowed-classes Route)
+;+		(cardinality 0 1)
+		(create-accessor read-write)))

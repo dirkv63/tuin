@@ -174,6 +174,20 @@ def datestamp(epoch):
     return datetime.fromtimestamp(epoch).strftime('%d/%m/%y')
 
 
+def monthdisp(ym):
+    """
+    This is a Jinja2 filter to convert %Y-%m into month Year.
+
+    :param ym: Date in %Y-%m format
+
+    :return: Date in month Year format.
+    """
+    month_arr = ["januari", "februari", "maart", "april", "mei", "juni",
+                 "juli", "augustus", "september", "oktober", "november", "december"]
+    (yr, mnth) = ym.split("-")
+    return "{m} {y}".format(y=yr, m=month_arr[int(mnth)-1])
+
+
 class LoopInfo:
     """
     This class handles a FOR loop information handling.

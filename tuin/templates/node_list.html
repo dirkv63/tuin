@@ -7,34 +7,43 @@
         <h1>
             {{ title }}
         </h1>
-        <table class="table table-hover table-condensed">
-            <tr>
-                <th>Post Data</th>
-                <th>Title</th>
-                <th>Category</th>
-            </tr>
-            {% for node in node_list.items %}
-            <tr>
-                <td>{{ node.created|datestamp }}</td>
-                <td>
-                    <a href=" {{ url_for('main.node', nid=node.nid) }}">{{ node.title }}</a>
-                </td>
-                <td>
-                    <a href=" {{ url_for('main.node', nid=node.parent_id) }}">{{ node.parent.title }}</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% if node_list.has_prev %}
-            <a href="{{ url_for('main.nodelist', order=order, page=node_list.prev_num) }}">&lt;&lt; Newer nodes</a>
+        {% for node in nodes %}
+            <h3>
+                <a href="{{ url_for('main.node', id=node.id) }}">{{ node.content.title }}</a>
+            </h3>
+            {% if node.type == "book" %}
+                {% if breadcrumb|length > 0 %}
+                    BC: {{ macros.bc(breadcrumb) }}
+                {% endif %}
+            {% endif %}
+            {% if node.terms|length > 0 %}
+                {{ macros.taxonomy(node.terms|terms_sorted) }}
+            {% endif %}
+            {% if node.type == "flickr" %}
+                <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
+                    <img src="{{node.flickr.flickrdetails.url_c}}" class="img-responsive square">
+                </a>
+            {% elif node.type == "lophoto" %}
+                <img src="{{ url_for('static', filename=node.lophoto.filename) }}"
+                     class="img-responsive square">
+            {% endif %}
+            {% if node.content.body is not none %}
+                {{ node.content.body|safe }}
+            {% endif %}
+            <br><small>Posted: {{ node.created|datestamp }} ({{ node.type }})</small>
+            <hr>
+        {% endfor %}
+        {% if page|int > 1 %}
+            <a href="{{ url_for('main.taxonomy', page=page|int-1, id=term_id) }}">&lt;&lt; Newer nodes</a>
         {% else %}
             &lt;&lt; Newer nodes
         {% endif %} |
-        {% if node_list.has_next %}
-            <a href="{{ url_for('main.nodelist', order=order, page=node_list.next_num) }}">Older nodes &gt;&gt;</a>
+        {% if page|int < max_page %}
+            <a href="{{ url_for('main.taxonomy', page=page|int+1, id=term_id) }}">Older nodes &gt;&gt;</a>
         {% else %}
             Older nodes &gt;&gt;
         {% endif %}
+
     </div>
     <div class="col-md-3 text-center">
         <div class="hidden-sm hidden-xs marsu">

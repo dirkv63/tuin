@@ -62,7 +62,7 @@ def index(page=1):
 @login_required
 def archive():
     params = dict(
-        nodes = ds.get_archive(),
+        archlist = ds.get_archive(),
         searchForm=Search()
     )
     return render_template("archive.html", **params)
@@ -100,7 +100,7 @@ def taxonomy(id, page=1):
         max_page=max_page,
         searchForm=Search()
     )
-    return render_template("taxonomy.html", **params)
+    return render_template("node_list.html", **params)
 
 
 @main.route('/taxpics/<id>')

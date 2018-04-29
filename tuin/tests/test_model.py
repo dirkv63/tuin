@@ -78,7 +78,7 @@ class TestModelGraph(unittest.TestCase):
         # month_time = db.func.strftime('%m', Node.created).label('month')
         # query = db.session.query(year_time, month_time, total_articles_query).group_by(year_time, month_time)
         # query = db.session.query(Node, year_time).group_by(year_time).count()
-        query = db.session.query(monthDesc, db.func.count()).group_by(monthDesc)
+        query = db.session.query(monthDesc, db.func.count()).group_by(monthDesc).order_by(Node.created.desc()).all()
         print(query)
         # sorted_query = query.order_by(datetime.datetime.fromtimestamp(Node.created.desc()).strftim)
         # for rec in query.all():
