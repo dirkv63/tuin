@@ -5,13 +5,25 @@
 <div class="row">
     <div class="col-md-9">
         <h1>
-            Archief
+            Archief  <small>Page {{ page }} of {{ max_page }}</small>
         </h1>
         {% for item in archlist %}
             <ul>
-                {{ item["monthDesc"]|monthdisp }} ({{ item["cnt"] }})
+                <a href="{{ url_for('main.monthlist', page=1, ym=item['monthDesc']) }}">
+                    {{ item["monthDesc"]|monthdisp }} ({{ item["cnt"] }})
+                </a>
             </ul>
         {% endfor %}
+        {% if page|int > 1 %}
+            <a href="{{ url_for('main.archive', page=page|int-1) }}">&lt;&lt; Newer nodes</a>
+        {% else %}
+            &lt;&lt; Newer nodes
+        {% endif %} |
+        {% if page|int < max_page %}
+            <a href="{{ url_for('main.archive', page=page|int+1) }}">Older nodes &gt;&gt;</a>
+        {% else %}
+            Older nodes &gt;&gt;
+        {% endif %}
     </div>
     <div class="col-md-3 text-center">
         <div class="hidden-sm hidden-xs marsu">

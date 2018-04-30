@@ -5,8 +5,9 @@
 <div class="row">
     <div class="col-md-9">
         <h1>
-            {{title }}
-            <small>{{ node.created|datestamp }}</small>
+            <a href="{{ url_for('main.node', id=node.id) }}">
+                {{title }} <small>{{ node.created|datestamp }}</small>
+            </a>
         </h1>
         {% if node.terms|length > 0 %}
             {{ macros.taxonomy(node.terms|terms_sorted) }}

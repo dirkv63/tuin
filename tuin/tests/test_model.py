@@ -64,7 +64,7 @@ class TestModelGraph(unittest.TestCase):
             print(node.created)
     """
 
-    def test_archive(self):
+    def test_get_nodes_for_month(self):
         """
         select count(*), strftime("%Y-%m", datetime(created, 'unixepoch')) from node
         group by strftime("%Y-%m", datetime(created, 'unixepoch'))
@@ -72,17 +72,12 @@ class TestModelGraph(unittest.TestCase):
 
         :return:
         """
-        # total_articles_query = db.func.count().label('total_articles')
-        monthSel = db.func.datetime(Node.created, "unixepoch")
-        monthDesc = db.func.strftime("%Y-%m", monthSel)
-        # month_time = db.func.strftime('%m', Node.created).label('month')
-        # query = db.session.query(year_time, month_time, total_articles_query).group_by(year_time, month_time)
-        # query = db.session.query(Node, year_time).group_by(year_time).count()
-        query = db.session.query(monthDesc, db.func.count()).group_by(monthDesc).order_by(Node.created.desc()).all()
-        print(query)
-        # sorted_query = query.order_by(datetime.datetime.fromtimestamp(Node.created.desc()).strftim)
-        # for rec in query.all():
-        #     print(rec)
+        ym = "2017-04"
+        month_sel = db.func.datetime(Node.created, "unixepoch")
+        month_desc = db.func.strftime("%Y-%m", month_sel).label("monthDesc")
+        nodes = db.session.query(Node).filter(month_desc == ym).all()
+        print(len(nodes))
+
 
 if __name__ == "__main__":
     unittest.main()

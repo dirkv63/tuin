@@ -5,11 +5,13 @@
 <div class="row">
     <div class="col-md-9">
         <h1>
-            {{ title }}
+            {{ title }} <small>Page {{ page }} of {{ max_page }}</small>
         </h1>
         {% for node in nodes %}
             <h3>
-                <a href="{{ url_for('main.node', id=node.id) }}">{{ node.content.title }}</a>
+                <a href="{{ url_for('main.node', id=node.id) }}">
+                    {{ node.content.title }} <small>{{ node.created|datestamp }}</small>
+                </a>
             </h3>
             {% if node.type == "book" %}
                 {% if breadcrumb|length > 0 %}
@@ -30,16 +32,23 @@
             {% if node.content.body is not none %}
                 {{ node.content.body|safe }}
             {% endif %}
-            <br><small>Posted: {{ node.created|datestamp }} ({{ node.type }})</small>
             <hr>
         {% endfor %}
         {% if page|int > 1 %}
-            <a href="{{ url_for('main.taxonomy', page=page|int-1, id=term_id) }}">&lt;&lt; Newer nodes</a>
+            {% if term_id is defined %}
+                <a href="{{ url_for('main.taxonomy', page=page|int-1, id=term_id) }}">&lt;&lt; Newer nodes</a>
+            {% elif ym is defined %}
+                <a href="{{ url_for('main.monthlist', page=page|int-1, ym=ym) }}">&lt;&lt; Newer nodes</a>
+            {% endif %}
         {% else %}
             &lt;&lt; Newer nodes
         {% endif %} |
         {% if page|int < max_page %}
-            <a href="{{ url_for('main.taxonomy', page=page|int+1, id=term_id) }}">Older nodes &gt;&gt;</a>
+            {% if term_id is defined %}
+                <a href="{{ url_for('main.taxonomy', page=page|int+1, id=term_id) }}">Older nodes &gt;&gt;</a>
+            {% elif ym is defined %}
+                <a href="{{ url_for('main.monthlist', page=page|int+1, ym=ym) }}">Older nodes &gt;&gt;</a>
+            {% endif %}
         {% else %}
             Older nodes &gt;&gt;
         {% endif %}

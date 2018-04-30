@@ -1,7 +1,21 @@
-; Sun Apr 29 22:59:10 CEST 2018
+; Mon Apr 30 16:18:17 CEST 2018
 ; 
 ;+ (version "3.5")
 ;+ (build "Build 660")
+
+([tuin_Class0] of  Layout
+
+	(calls_route [tuin_Class30])
+	(description "Lijst met planten taxonomy om per plant de foto's te laten zien.")
+	(name "3.1. Planten")
+	(parent_layout [tuin_Class24]))
+
+([tuin_Class1] of  Layout
+
+	(calls_route [tuin_Class30])
+	(description "Lijst met de plaats vocabulary om per plaats de foto's te laten zien.")
+	(name "3.2 Plaats")
+	(parent_layout [tuin_Class24]))
 
 ([tuin_Class10] of  Route
 
@@ -33,11 +47,13 @@
 		[tuin_Class26]
 		[tuin_Class27]
 		[tuin_Class28]
-		[tuin_Class29])
+		[tuin_Class29]
+		[tuin_Class4])
 	(called_by_template
 		[tuin_Class13]
 		[tuin_Class18]
-		[tuin_Class20])
+		[tuin_Class20]
+		[tuin_Class33])
 	(calls_templated [tuin_Class18])
 	(description "Collects information for a single node.")
 	(name "node")
@@ -71,6 +87,13 @@
 	(path
 		"/taxpics/<id>"
 		"/taxpics/<id>/<page>"))
+
+([tuin_Class2] of  Layout
+
+	(calls_route [tuin_Class30])
+	(description "List containing planten vocabulary, to select and show the nodes associated with this taxonomy term.\nVocabulary is called with target taxonomy.")
+	(name "4.1 Planten")
+	(parent_layout [tuin_Class25]))
 
 ([tuin_Class20] of  Template
 
@@ -129,11 +152,17 @@
 ([tuin_Class24] of  Layout
 
 	(description "Parent item for the vocabulary selection list for photos.\nPhotos will come in 4x4 matrix.")
+	(layout_children
+		[tuin_Class0]
+		[tuin_Class1])
 	(name "3. Foto's"))
 
 ([tuin_Class25] of  Layout
 
 	(description "Parent item list for the berichten: vocabulary list and archive.")
+	(layout_children
+		[tuin_Class2]
+		[tuin_Class3])
 	(name "4. Berichten"))
 
 ([tuin_Class26] of  Layout
@@ -164,13 +193,25 @@
 	(name "2.4 Kalender")
 	(parent_layout [tuin_Class23]))
 
+([tuin_Class3] of  Layout
+
+	(calls_route [tuin_Class30])
+	(description "List containing plaats vocabulary, to select and show the nodes associated with this taxonomy term.\nVocabulary is called with target taxonomy.")
+	(name "4.2 Plaats")
+	(parent_layout [tuin_Class25]))
+
 ([tuin_Class30] of  Route
 
 	(attrib
 		"id"
 		"target")
+	(called_by_layout
+		[tuin_Class0]
+		[tuin_Class1]
+		[tuin_Class2]
+		[tuin_Class3])
 	(calls_templated [tuin_Class31])
-	(description "Collects the vocabulary item that has been selected.\nThe URL remembers the calling source.\nDepending on the calling template, the called template vocabulary.html will behave differently.")
+	(description "Collects the vocabulary item that has been selected.\nThe URL remembers the calling source.\nDepending on the calling source, the called template vocabulary.html will behave differently.\nThe target parameter will define behaviour for vocabulary template.")
 	(name "vocabulary")
 	(path "/vocabulary/<id>/<target>"))
 
@@ -192,7 +233,9 @@
 	(attrib
 		"id"
 		"page")
-	(called_by_template [tuin_Class31])
+	(called_by_template
+		[tuin_Class31]
+		[tuin_Class33])
 	(calls_templated [tuin_Class33])
 	(description "This function will collect all nodes related to a taxonomy term to show the info in a node list format. All node types are collected and the output is a list-like format.")
 	(name "taxonomy")
@@ -202,9 +245,48 @@
 
 ([tuin_Class33] of  Template
 
+	(attrib
+		"term_id"
+		"title"
+		"nodes"
+		"page"
+		"max_page"
+		"searchForm")
 	(called_by_route [tuin_Class32])
-	(description "TO BE COMPLETED.")
-	(name "node_list"))
+	(calls_route_from_temp
+		[tuin_Class16]
+		[tuin_Class32])
+	(description "This procedure will show node information in list format. There is a pager on the page. \nThe taxonomy URL is required for pager only.")
+	(name "node_list.html"))
+
+([tuin_Class4] of  Layout
+
+	(calls_route [tuin_Class16])
+	(description "ToDo\nTuinplan with links to the planten. Each link will connect to this plant Book page.")
+	(name "5. Tuinplan"))
+
+([tuin_Class5] of  Layout
+
+	(calls_route [tuin_Class6])
+	(description "This will show a list of years and months in descending order, with number of nodes posted in this month.")
+	(name "4.3 Archief"))
+
+([tuin_Class6] of  Route
+
+	(called_by_layout [tuin_Class5])
+	(calls_templated [tuin_Class7])
+	(description "Collects archive information: list of years and months in descending order, with number of nodes published in this month.")
+	(name "archive")
+	(path "/archive"))
+
+([tuin_Class7] of  Template
+
+	(attrib
+		"archlist"
+		"searchForm")
+	(called_by_route [tuin_Class6])
+	(description "List of years - months and number of posts in descending (year/month) order. Allows to link to node list page.")
+	(name "archive.html"))
 
 ([tuin_Class9] of  Layout
 

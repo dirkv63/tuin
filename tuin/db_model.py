@@ -263,9 +263,9 @@ def get_archive():
 
     :return: Year - month (%Y-%m) and number of nodes created in this month, sorted from youngest to oldest.
     """
-    monthSel = db.func.datetime(Node.created, "unixepoch")
-    monthDesc = db.func.strftime("%Y-%m", monthSel).label("monthDesc")
-    query = db.session.query(monthDesc, db.func.count().label("cnt")).group_by(monthDesc).order_by(Node.created.desc())
+    month_sel = db.func.datetime(Node.created, "unixepoch")
+    month_desc = db.func.strftime("%Y-%m", month_sel).label("monthDesc")
+    query = db.session.query(month_desc, db.func.count().label("cnt")).group_by(month_desc).order_by(Node.created.desc())
     return query.all()
 
 
@@ -319,6 +319,20 @@ def get_node_list(order="created"):
         node_order = Node.modified.desc()
     node_list = Node.query.order_by(node_order)
     return node_list
+
+
+def get_nodes_for_month(ym):
+    """
+    This method will return the list of nodes that were created in a specific month.
+
+    :param ym: Month is format YYYY-MM
+
+    :return: Nodes that have been created in this month.
+    """
+    month_sel = db.func.datetime(Node.created, "unixepoch")
+    month_desc = db.func.strftime("%Y-%m", month_sel).label("monthDesc")
+    query = db.session.query(Node).filter(month_desc == ym).order_by(Node.created.desc())
+    return query.all()
 
 
 def get_pics(page=1):

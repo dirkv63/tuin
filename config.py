@@ -5,7 +5,9 @@ import os
 # Be careful: Variable names need to be UPPERCASE
 
 # pagination
-ITEMS_PER_PAGE = 16
+PICS_PER_PAGE = 16
+NODES_PER_PAGE = 8
+ITEMS_PER_PAGE = 20
 
 class Config:
     SECRET_KEY = os.urandom(24)

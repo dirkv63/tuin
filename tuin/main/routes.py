@@ -5,7 +5,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
 from tuin.db_model import *
-# from lib import my_env
+from lib import my_env
 from config import *
 
 
@@ -59,13 +59,39 @@ def index(page=1):
 
 
 @main.route('/archive')
+@main.route('/archive/<page>')
 @login_required
-def archive():
+def archive(page=1):
+    archlist = ds.get_archive()
+    start = (int(page)-1) * ITEMS_PER_PAGE
+    end = int(page) * ITEMS_PER_PAGE
+    max_page = ((len(archlist)-1) // ITEMS_PER_PAGE) + 1
     params = dict(
-        archlist = ds.get_archive(),
-        searchForm=Search()
+        archlist = archlist[start:end],
+        searchForm=Search(),
+        page=page,
+        max_page=max_page
     )
     return render_template("archive.html", **params)
+
+
+@main.route('/monthlist/<ym>')
+@main.route('/monthlist/<ym>/<page>')
+@login_required
+def monthlist(ym, page=1):
+    nodes = ds.get_nodes_for_month(ym)
+    start = (int(page)-1) * NODES_PER_PAGE
+    end = int(page) * NODES_PER_PAGE
+    max_page = ((len(nodes)-1) // NODES_PER_PAGE) + 1
+    params = dict(
+        ym=ym,
+        title=my_env.monthdisp(ym),
+        nodes=nodes[start:end],
+        page=page,
+        max_page=max_page,
+        searchForm=Search()
+    )
+    return render_template("node_list.html", **params)
 
 
 @main.route('/node/<id>')
@@ -91,7 +117,7 @@ def taxonomy(id, page=1):
     end = int(page) * ITEMS_PER_PAGE
     nodes = [node for node in term.nodes]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = (len(sel_nodes) // ITEMS_PER_PAGE) + 1
+    max_page = ((len(sel_nodes)-1) // ITEMS_PER_PAGE) + 1
     params = dict(
         term_id=id,
         title=term.name,
@@ -108,11 +134,11 @@ def taxonomy(id, page=1):
 @login_required
 def taxpics(id, page=1):
     term = Term.query.filter_by(id=id).one()
-    start = (int(page)-1) * ITEMS_PER_PAGE
-    end = int(page) * ITEMS_PER_PAGE
+    start = (int(page)-1) * PICS_PER_PAGE
+    end = int(page) * PICS_PER_PAGE
     nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = (len(sel_nodes) // ITEMS_PER_PAGE) + 1
+    max_page = ((len(sel_nodes)-1) // PICS_PER_PAGE) + 1
     params = dict(
         term_id=id,
         title=term.name,
