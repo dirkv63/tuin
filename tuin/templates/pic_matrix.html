@@ -43,6 +43,18 @@
             <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
         </div>
         {{ macros.search(searchForm) }}
+        <div class="actions">
+            <h3>Acties</h3>
+            <hr>
+            <div class="btn-group-vertical" role="group" aria-label="Actions">
+                <a href="{{ url_for('main.index', page=45) }}" class="btn btn-default" role="button">
+                    Nieuwe Foto
+                </a>
+                <a href="{{ url_for('main.blog_add') }}" class="btn btn-default" role="button">
+                    Nieuwe Tekst
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

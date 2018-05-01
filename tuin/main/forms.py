@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm as Form
 from wtforms import StringField, SubmitField, PasswordField, BooleanField, TextAreaField, SelectField, HiddenField
+from wtforms import SelectMultipleField
 import wtforms.validators as wtv
 
 from wtforms.widgets import TextArea
@@ -34,13 +35,12 @@ class PwdUpdate(Form):
     submit = SubmitField('Change')
 
 
-class NodeAdd(Form):
-    # form_overrides = dict(body=CKTextAreaField)
-    title = StringField('Title')
-    body = CKTextAreaField('Body')
-    parent_id = HiddenField('Parent_ID', render_kw={'readonly': True})
+class TextAdd(Form):
+    title = StringField('Titel')
+    body = CKTextAreaField('Beschrijving')
+    plaats = SelectMultipleField('Plaats: ', coerce=str)
+    planten = SelectMultipleField('Planten', coerce=str)
     submit = SubmitField('OK')
-
 
 
 class NodeOutline(Form):

@@ -149,6 +149,67 @@ def taxpics(id, page=1):
     )
     return render_template("taxpics.html", **params)
 
+
+@main.route('/blog/add', methods=['GET', 'POST'])
+@login_required
+def blog_add(node_id=None):
+    """
+    This method allows to add or edit a blog text. A blog text is only text, no picture attached to it.
+
+    :param node_id: ID of the node for edit, or None for add
+
+    :return:
+    """
+    form = TextAdd()
+    if request.method == "GET":
+        # Get Form.
+        form.plaats.choices = ds.get_terms("Plaats")
+        form.planten.choices = ds.get_terms("Planten")
+        if node_id:
+            node = Node.query.filter_by(id=node_id).one()
+            hdr = "Aanpassen {t}".format(t=node.content.title)
+            form.title.data = node.content.title
+            form.body.data = node.content.body
+            form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
+            form.planten.data = ds.get_terms_for_node("Planten", node_id)
+        else:
+            hdr = "Nieuwe Blog"
+        temp_attribs = dict(
+            hdr=hdr,
+            form=form,
+            searchForm=Search()
+        )
+        return render_template('form.html', **temp_attribs)
+    else:
+        title = form.title.data
+        body = form.body.data
+        plaats = form.plaats.data
+        planten = form.planten.data
+        params = dict(type="blog")
+        if node_id:
+            params["id"] = node_id
+            Node.edit(**params)
+        else:
+            node_id = Node.add(**params)
+        params = dict(node_id=node_id, title=title, body=body)
+        Content.update(**params)
+        ds.update_taxonomy_for_node(node_id, plaats+planten)
+        return redirect(url_for('main.node', id=node_id))
+
+
+@main.route('/blog/edit/<node_id>', methods=['GET', 'POST'])
+@login_required
+def blog_edit(node_id):
+    """
+    This method allows to edit a blog text. A blog text is only text, no picture attached to it.
+
+    :param node_id: Id of the node under review
+
+    :return:
+    """
+    return blog_add(node_id=node_id)
+
+
 @main.route("/timeline/<term_id>/<datestamp>")
 @login_required
 def timeline(term_id, datestamp):

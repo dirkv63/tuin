@@ -72,12 +72,8 @@ class TestModelGraph(unittest.TestCase):
 
         :return:
         """
-        ym = "2017-04"
-        month_sel = db.func.datetime(Node.created, "unixepoch")
-        month_desc = db.func.strftime("%Y-%m", month_sel).label("monthDesc")
-        nodes = db.session.query(Node).filter(month_desc == ym).all()
-        print(len(nodes))
-
+        res = ds.get_terms_for_node("Plaats", 1757)
+        print(res)
 
 if __name__ == "__main__":
     unittest.main()

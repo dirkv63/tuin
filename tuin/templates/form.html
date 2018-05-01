@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "macros.html" as macros %}
+
+{% block head %}
+{{ super() }}
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous">
+  </script>
+  <script src="//cdn.ckeditor.com/4.7.2/standard/ckeditor.js"></script>
+{% endblock %}
+
+{% block page_content %}
+<h1>{{ hdr }}</h1>
+<div class="row">
+    <div class="col-md-9">
+        {{ wtf.quick_form(form, form_type="basic") }}
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+        <div class="actions">
+            <h3>Acties</h3>
+            <hr>
+            <div class="btn-group-vertical" role="group" aria-label="Actions">
+                <a href="{{ url_for('main.index', page=45) }}" class="btn btn-default" role="button">
+                    Nieuwe Foto
+                </a>
+                <a href="{{ url_for('main.blog_add') }}" class="btn btn-default" role="button">
+                    Nieuwe Tekst
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

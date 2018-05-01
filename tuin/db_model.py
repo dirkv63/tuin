@@ -6,7 +6,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-# from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound
 
 
 class Content(db.Model):
@@ -18,6 +18,26 @@ class Content(db.Model):
     node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
     title = db.Column(db.Text, nullable=False)
     body = db.Column(db.Text)
+
+    @staticmethod
+    def update(**params):
+        """
+        This method will add or edit the node title or body.
+
+        :param params: Dictionary with node_id, title and body as keys.
+
+        :return:
+        """
+        try:
+            content_inst = db.session.query(Content).filter_by(node_id=params['node_id']).one()
+            content_inst.title = params["title"]
+            content_inst.body = params["body"]
+        except NoResultFound:
+            content_inst = Content(**params)
+            db.session.add(content_inst)
+        db.session.commit()
+        db.session.refresh(content_inst)
+        return content_inst.id
 
 
 class Flickr(db.Model):
@@ -89,11 +109,13 @@ class Node(db.Model):
         params['created'] = int(time.time())
         params['modified'] = params['created']
         params['revcnt'] = 1
+        if "parent_id" not in params:
+            params["parent_id"] = -1
         node_inst = Node(**params)
         db.session.add(node_inst)
         db.session.commit()
         db.session.refresh(node_inst)
-        return node_inst.nid
+        return node_inst.id
 
     @staticmethod
     def edit(**params):
@@ -104,9 +126,7 @@ class Node(db.Model):
 
         :return:
         """
-        node_inst = db.session.query(Node).filter_by(nid=params['nid']).first()
-        # node_inst.title = params['title']
-        # node_inst.body = params['body']
+        node_inst = db.session.query(Node).filter_by(id=params['id']).first()
         node_inst.modified = int(time.time())
         node_inst.revcnt += 1
         db.session.commit()
@@ -167,6 +187,22 @@ class Taxonomy(db.Model):
     term_id = db.Column(db.Integer, db.ForeignKey("term.id"), nullable=False)
     created = db.Column(db.Integer, nullable=False)
 
+    @staticmethod
+    def add(**params):
+        params['created'] = int(time.time())
+        taxonomy_inst = Taxonomy(**params)
+        db.session.add(taxonomy_inst)
+        db.session.commit()
+        db.session.refresh(taxonomy_inst)
+        return taxonomy_inst.id
+
+    @staticmethod
+    def delete(**params):
+        taxonomy_inst = Taxonomy.query.filter_by(node_id=params["node_id"], term_id=params["term_id"]).one()
+        db.session.delete(taxonomy_inst)
+        db.session.commit()
+        return True
+
 
 class Term(db.Model):
     """
@@ -177,7 +213,14 @@ class Term(db.Model):
     vocabulary_id = db.Column(db.Integer, db.ForeignKey("vocabulary.id"), nullable=False)
     name = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
-    # nodes = db.relationship("Node", secondary="taxonomy", backref=db.backref("terms", order_by="desc(Node.created)"))
+
+    @staticmethod
+    def add(**params):
+        term_inst = Term(**params)
+        db.session.add(term_inst)
+        db.session.commit()
+        db.session.refresh(term_inst)
+        return term_inst.nid
 
 
 class Vocabulary(db.Model):
@@ -265,7 +308,8 @@ def get_archive():
     """
     month_sel = db.func.datetime(Node.created, "unixepoch")
     month_desc = db.func.strftime("%Y-%m", month_sel).label("monthDesc")
-    query = db.session.query(month_desc, db.func.count().label("cnt")).group_by(month_desc).order_by(Node.created.desc())
+    query = db.session.query(month_desc, db.func.count().label("cnt"))\
+        .group_by(month_desc).order_by(Node.created.desc())
     return query.all()
 
 
@@ -335,11 +379,9 @@ def get_nodes_for_month(ym):
     return query.all()
 
 
-def get_pics(page=1):
+def get_pics():
     """
     This method will get the picture URLs for the page specified.
-
-    :param page: Page number. Each page has ITEMS_PER_PAGE (see config.py) pictures, from most recent to oldest.
 
     :return:
     """
@@ -348,20 +390,48 @@ def get_pics(page=1):
     return nodes
 
 
-def get_pics_tax(tax=1, page=1):
+def get_pics_tax(tax=1):
     """
     This method will get the picture URLs for the page and taxonomy term specified.
 
     :param tax: Taxonomy term ID
 
-    :param page: Page number. Each page has ITEMS_PER_PAGE (see config.py) pictures, from most recent to oldest.
-
     :return:
     """
     node_order = Node.created.desc()
     nodes = Node.query.filter((Node.terms.id == tax)).order_by(node_order)
-    # nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
     return nodes
+
+
+def get_terms(voc):
+    """
+    This method will return the terms for a vocabulary in (value, label) pairs. This can be used in SelectMultipleField
+    item.
+
+    :param voc: Vocabulary name
+
+    :return: Terms of the vocabulary in (value, label) pair.
+    """
+    voc = Vocabulary.query.filter_by(name=voc).one()
+    terms = [(term.id, term.name) for term in voc.terms]
+    return terms
+
+
+def get_terms_for_node(voc, node_id):
+    """
+    This method will return the selected terms for a vocabulary for a specific node.
+
+    :param voc: Vocabulary name
+
+    :param node_id: ID of the node.
+
+    :return: List of term IDs
+    """
+    voc = Vocabulary.query.filter_by(name=voc).one()
+    term_ids = [term.id for term in voc.terms]
+    taxonomies = Taxonomy.query.filter(Taxonomy.term_id.in_(term_ids), Taxonomy.node_id == node_id)
+    terms = [str(tax.term_id) for tax in taxonomies]
+    return terms
 
 
 def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
@@ -387,7 +457,7 @@ def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     level += "-"
     # print("{q}".format(q=str(nodes)))
     for node in nodes.all():
-        params = (node.nid, "{l} {t}".format(l=level, t=node.title))
+        params = (node.nid, "{lvl} {t}".format(lvl=level, t=node.title))
 
         # print("{level} {title}".format(level=level, title=node.title))
         tree.append(params)
@@ -396,15 +466,15 @@ def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     return tree
 
 
-def get_voc_name(id):
+def get_voc_name(nid):
     """
     This method will return the vocabulary name for this ID.
 
-    :param id: ID of the vocabulary
+    :param nid: ID of the vocabulary
 
     :return: Name of the vocabulary (Plaats or Planten)
     """
-    voc = Vocabulary.query.filter_by(id=id)
+    voc = Vocabulary.query.filter_by(id=nid)
     return voc
 
 
@@ -418,7 +488,6 @@ def search_term(term):
     with sc:
         sc.row_factory = sqlite3.Row
         sc_cur = sc.cursor()
-        # query = "CREATE VIRTUAL TABLE nodes USING fts5(nid UNINDEXED, title, body, created UNINDEXED)"
         query = "CREATE VIRTUAL TABLE nodes USING fts4(nid, title, body, created, parent," \
                 "notindexed=nid, notindexed=created, notindexed=parent)"
         sc.execute(query)
@@ -436,3 +505,37 @@ def search_term(term):
         query = "SELECT distinct * FROM nodes WHERE nodes MATCH ?"
         res = sc_cur.execute(query, (term, ))
         return res
+
+
+def update_taxonomy_for_node(nid, req_terms=None):
+    """
+    This method will update taxonomy terms for a node. It will get the list of taxonomy terms, add the new ones and
+    remove the taxonomy terms that used to exist, but do not exist anymore.
+    The method works for all vocabulary terms in the same process. The method also works for add, update or delete. For
+    delete the terms array needs to be empty.
+
+    :param nid: Node Id
+
+    :param req_terms: List of taxonomy terms that apply to the node Id
+
+    :return:
+    """
+    if req_terms:
+        terms = [int(term) for term in req_terms]
+    else:
+        terms = []
+    # Get list of current taxonomy terms for the node
+    params = dict(node_id=nid)
+    tax_list = Taxonomy.query.filter_by(node_id=nid)
+    current_terms = [tax.term_id for tax in tax_list]
+    # Add new taxonomy terms
+    for term in terms:
+        if term not in current_terms:
+            params["term_id"] = term
+            Taxonomy.add(**params)
+    # Remove old taxonomy terms
+    for term in current_terms:
+        if term not in terms:
+            params["term_id"] = term
+            Taxonomy.delete(**params)
+    return
