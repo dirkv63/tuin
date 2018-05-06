@@ -1,3 +1,4 @@
+import flickrapi
 # import logging
 import sqlite3
 import time
@@ -7,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from flickrapi.exceptions import FlickrError
 
 
 class Content(db.Model):
@@ -49,6 +51,35 @@ class Flickr(db.Model):
     node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
     photo_id = db.Column(db.Integer)
     flickrdetails = db.relationship("FlickrDetails", uselist=False)
+
+
+    @staticmethod
+    def update(**params):
+        """
+        This method will add or edit the flickr information.
+
+        :param params: Dictionary with node_id and photo_id as keys.
+
+        :return:
+        """
+        flickr_obj = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_SECRET, format="parsed_json")
+        try:
+            pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
+        except FlickrError:
+            print("Picture not found")
+            # Remove Flickr record for Node ID if it exist.
+            return
+        else:
+            FlickrDetails.update(pic)
+            try:
+                flickr_inst = db.session.query(Flickr).filter_by(node_id=params['node_id']).one()
+                flickr_inst.photo_id = params["photo_id"]
+            except NoResultFound:
+                flickr_inst = Flickr(**params)
+                db.session.add(flickr_inst)
+            db.session.commit()
+            db.session.refresh(flickr_inst)
+            return flickr_inst.id
 
 
 class FlickrDetails(db.Model):
@@ -455,11 +486,9 @@ def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     # nodes = Node.query.filter_by(parent_id=parent_id).order_by("title")
     nodes = Node.query.filter(Node.parent_id == parent_id, Node.nid != exclnid).order_by("title")
     level += "-"
-    # print("{q}".format(q=str(nodes)))
     for node in nodes.all():
         params = (node.nid, "{lvl} {t}".format(lvl=level, t=node.title))
 
-        # print("{level} {title}".format(level=level, title=node.title))
         tree.append(params)
         if node.nid != exclnid:
             tree = get_tree(parent_id=node.nid, tree=tree, level=level, exclnid=exclnid)

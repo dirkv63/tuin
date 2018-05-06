@@ -172,6 +172,8 @@ def blog_add(node_id=None):
             form.body.data = node.content.body
             form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
             form.planten.data = ds.get_terms_for_node("Planten", node_id)
+            if node.type == "flickr":
+                form.photo.data = node.flickr.photo_id
         else:
             hdr = "Nieuwe Blog"
         temp_attribs = dict(
@@ -185,7 +187,13 @@ def blog_add(node_id=None):
         body = form.body.data
         plaats = form.plaats.data
         planten = form.planten.data
-        params = dict(type="blog")
+        if form.photo.data:
+            node_type = "flickr"
+            print("Type Flickr")
+        else:
+            node_type = "blog"
+            print("Type blog")
+        params = dict(type=node_type)
         if node_id:
             params["id"] = node_id
             Node.edit(**params)
@@ -194,6 +202,14 @@ def blog_add(node_id=None):
         params = dict(node_id=node_id, title=title, body=body)
         Content.update(**params)
         ds.update_taxonomy_for_node(node_id, plaats+planten)
+        if node_type == "flickr":
+            params = dict(
+                node_id=node_id,
+                photo_id=form.photo.data
+            )
+            Flickr.update(**params)
+        else:
+            Flickr.delete(node_id)
         return redirect(url_for('main.node', id=node_id))
 
 
@@ -219,8 +235,6 @@ def timeline(term_id, datestamp):
     term = Term.query.filter_by(id=term_id).one()
     nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    print("Selected notes: {sn}".format(sn=sel_nodes))
-    print("Node to find: {n}".format(n=node))
     # Find index of the requested node
     pos = sel_nodes.index(node)
     params = dict(
@@ -231,7 +245,6 @@ def timeline(term_id, datestamp):
     )
     if pos > 0:
         params["prev_node"] = sel_nodes[pos-1]
-    print("Pos: {pos} - length: {lsn}".format(pos=pos, lsn=len(sel_nodes)))
     if len(sel_nodes) > (pos+1):
         params["next_node"] = sel_nodes[pos+1]
     return render_template("timeline.html", **params)

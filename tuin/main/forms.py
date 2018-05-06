@@ -37,6 +37,7 @@ class PwdUpdate(Form):
 
 class TextAdd(Form):
     title = StringField('Titel')
+    photo = StringField('Foto ID')
     body = CKTextAreaField('Beschrijving')
     plaats = SelectMultipleField('Plaats: ', coerce=str)
     planten = SelectMultipleField('Planten', coerce=str)
