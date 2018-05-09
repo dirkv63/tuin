@@ -73,9 +73,10 @@ class TestModelGraph(unittest.TestCase):
 
         :return:
         """
-        query = db.session.query(Flickr.photo_id).distinct().all()
-        photo_list = [rec.photo_id for rec in query]
-        print(photo_list)
+        photo_list = db.session.query(Flickr.photo_id).distinct()
+        query = db.session.query(FlickrDetails).filter(FlickrDetails.photo_id.notin_(photo_list)).all()
+        for rec in query:
+            print("Ready to delete {pid}".format(pid=rec.photo_id))
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,6 +18,7 @@ def create_app(config_name):
     :param config_name: development, test or production
     :return: the configured application object.
     """
+
     app = Flask(__name__)
 
     # import configuration
@@ -25,7 +26,10 @@ def create_app(config_name):
     config[config_name].init_app(app)
 
     # Configure Logger
-    my_env.init_loghandler(__name__, app.config.get('LOGDIR'), app.config.get('LOGLEVEL'))
+    hdl = my_env.get_loghandler(__name__, app.config.get('LOGDIR'), app.config.get('LOGLEVEL'))
+    app.logger.addHandler(hdl)
+
+    app.logger.info("Start Application")
 
     # initialize extensions
     bootstrap.init_app(app)

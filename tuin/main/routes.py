@@ -166,6 +166,7 @@ def blog_add(node_id=None):
         form.plaats.choices = ds.get_terms("Plaats")
         form.planten.choices = ds.get_terms("Planten")
         if node_id:
+            # Todo - add error handling for invalid node_ids.
             node = Node.query.filter_by(id=node_id).one()
             hdr = "Aanpassen {t}".format(t=node.content.title)
             form.title.data = node.content.title
@@ -189,10 +190,8 @@ def blog_add(node_id=None):
         planten = form.planten.data
         if form.photo.data:
             node_type = "flickr"
-            print("Type Flickr")
         else:
             node_type = "blog"
-            print("Type blog")
         params = dict(type=node_type)
         if node_id:
             params["id"] = node_id
@@ -207,11 +206,20 @@ def blog_add(node_id=None):
                 node_id=node_id,
                 photo_id=form.photo.data
             )
-            Flickr.update(**params)
+            res = Flickr.update(**params)
         else:
-            Flickr.delete(node_id)
-        return redirect(url_for('main.node', id=node_id))
-
+            res = Flickr.delete(node_id)
+        if isinstance(res, int):
+            # OK, succesful
+            return redirect(url_for('main.node', id=node_id))
+        else:
+            flash(res, "error")
+            temp_attribs = dict(
+                hdr="Aanpassing nodig",
+                form=form,
+                searchForm=Search()
+            )
+            return render_template('form.html', **temp_attribs)
 
 @main.route('/blog/edit/<node_id>', methods=['GET', 'POST'])
 @login_required

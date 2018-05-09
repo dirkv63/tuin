@@ -1,8 +1,10 @@
+from config import *
 import flickrapi
 # import logging
 import sqlite3
 import time
 from . import db, lm
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine
@@ -52,23 +54,33 @@ class Flickr(db.Model):
     photo_id = db.Column(db.Integer)
     flickrdetails = db.relationship("FlickrDetails", uselist=False)
 
-
     @staticmethod
     def update(**params):
         """
         This method will add or edit the flickr information.
+        First the Flickr detail info is collected. Then call to update Flickr Details.
+        Next is check for existing flickr record for the node. If it exist, the photo_id is filled in. It may overwrite
+        an existing photo_id if there was a change.
+        If flickr record does not exist, it will be created.
+
+        Finally a call to delete orphan FlickrDetails records is done.
 
         :param params: Dictionary with node_id and photo_id as keys.
 
-        :return:
+        :return: msg (string) in case of problems, record ID (int) otherwise.
         """
-        flickr_obj = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_SECRET, format="parsed_json")
+        flickr_obj = get_flickr_object()
         try:
             pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
         except FlickrError:
-            print("Picture not found")
-            # Remove Flickr record for Node ID if it exist.
-            return
+            # User error, no logging required
+            msg = "Flickr ID {pid} not found"
+            return msg
+        except KeyError:
+            # Application error, logging required.
+            msg = "Error in call, photo_id not defined as key: {p}".format(p=params)
+            current_app.logger.error(msg)
+            return msg
         else:
             FlickrDetails.update(pic)
             try:
@@ -79,22 +91,34 @@ class Flickr(db.Model):
                 db.session.add(flickr_inst)
             db.session.commit()
             db.session.refresh(flickr_inst)
-            return flickr_inst.id
+            # This can be a change in picture, check if orphan picture details need to be deleted.
+            FlickrDetails.delete()
+            return int(flickr_inst.id)
 
     @staticmethod
     def delete(node_id):
         """
-        This method will delete the node - picture record. This happens if there is a change in picture ID
-        or if the picture ID is deleted.
+        This method will delete the node - picture record. This happens when the node is deleted or if the node changes
+        from type flickr to type blog or when a new blog record is created, so delete may be called for unexisting
+        records.
 
         :param node_id: ID of the node attached to this picture.
 
-        :return:
+        :return: 1 - integer. Flickr.update method may return msg (string) in case of errors.
         """
-        flickr_inst = Flickr.query.filter_by(node_id=node_id).one()
-        db.session.delete(flickr_inst)
-        db.session.commit()
-        return True
+        try:
+            flickr_inst = db.session.query(Flickr).filter_by(node_id=node_id).one()
+        except NoResultFound:
+            current_app.logger.debug("Got a request to delete Flickr record for node ID {nid}, but nid not found"
+                                     .format(nid=node_id))
+        else:
+            current_app.logger.info("Delete Node {nid} with Flickr ID {pid}"
+                                    .format(nid=node_id, pid=flickr_inst.photo_id))
+            db.session.delete(flickr_inst)
+            db.session.commit()
+            # Check for orphan flickr details records
+            FlickrDetails.delete()
+        return 1
 
 
 class FlickrDetails(db.Model):
@@ -120,16 +144,23 @@ class FlickrDetails(db.Model):
     @staticmethod
     def delete():
         """
-        This method will delete all pictures for which no more nodes are attached.
-        select photo_id from flickrdetails where photo_id not in (select photo_id from flickr)
+        This method will delete all orphan flickrdetail records. It will check for photo_ids in flickrdetails that are
+        not in flickr table, so no node is connected to it. These photo_ids will be deleted.
+
+        select * from flickrdetails
+        where photo_id not in (select photo_id from flickr)
 
         :return:
         """
-        # First get photo IDs from table flickr
-        photos = Flickr.query.all()
-        flickrdetails_inst = FlickrDetails.query.filter_by(node_id=node_id).one()
-        db.session.delete(flickr_inst)
-        db.session.commit()
+        current_app.logger.info("Find orphan Flickr IDs to remove from FlickrDetails")
+        photo_list = db.session.query(Flickr.photo_id).distinct()
+        query = db.session.query(FlickrDetails).filter(FlickrDetails.photo_id.notin_(photo_list)).all()
+        for rec in query:
+            current_app.logger.info("Delete flickr ID {pid}".format(pid=rec.photo_id))
+            """
+            db.session.delete(rec)
+            db.session.commit()
+            """
         return True
 
 
@@ -324,6 +355,13 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return "<User: {user}>".format(user=self.username)
+
+
+def get_flickr_object():
+    # Todo no from config import *, use current_app.config.get
+    return flickrapi.FlickrAPI(FLICKR_KEY,
+                               FLICKR_SECRET,
+                               format="parsed_json")
 
 
 def init_session(dbconn, echo=False):
