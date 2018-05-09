@@ -16,3 +16,4 @@ temp/*
 client_secrets.json
 settings.yaml
 */static/*
+config.py

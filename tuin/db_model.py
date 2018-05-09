@@ -81,6 +81,21 @@ class Flickr(db.Model):
             db.session.refresh(flickr_inst)
             return flickr_inst.id
 
+    @staticmethod
+    def delete(node_id):
+        """
+        This method will delete the node - picture record. This happens if there is a change in picture ID
+        or if the picture ID is deleted.
+
+        :param node_id: ID of the node attached to this picture.
+
+        :return:
+        """
+        flickr_inst = Flickr.query.filter_by(node_id=node_id).one()
+        db.session.delete(flickr_inst)
+        db.session.commit()
+        return True
+
 
 class FlickrDetails(db.Model):
     """
@@ -101,6 +116,21 @@ class FlickrDetails(db.Model):
     url_t = db.Column(db.Text, nullable=False)
     url_z = db.Column(db.Text, nullable=False)
     flickr_url = db.Column(db.Text, nullable=False)
+
+    @staticmethod
+    def delete():
+        """
+        This method will delete all pictures for which no more nodes are attached.
+        select photo_id from flickrdetails where photo_id not in (select photo_id from flickr)
+
+        :return:
+        """
+        # First get photo IDs from table flickr
+        photos = Flickr.query.all()
+        flickrdetails_inst = FlickrDetails.query.filter_by(node_id=node_id).one()
+        db.session.delete(flickr_inst)
+        db.session.commit()
+        return True
 
 
 class Lophoto(db.Model):

@@ -70,10 +70,12 @@ class TestModelGraph(unittest.TestCase):
         group by strftime("%Y-%m", datetime(created, 'unixepoch'))
         order by created desc
 
+
         :return:
         """
-        res = ds.get_terms_for_node("Plaats", 1757)
-        print(res)
+        query = db.session.query(Flickr.photo_id).distinct().all()
+        photo_list = [rec.photo_id for rec in query]
+        print(photo_list)
 
 if __name__ == "__main__":
     unittest.main()
