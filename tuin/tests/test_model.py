@@ -4,6 +4,7 @@ This procedure will test the classes of the models_graph.
 
 import datetime
 import unittest
+
 from tuin import create_app, db_model as ds
 from tuin.db_model import *
 from lib import my_env
@@ -73,10 +74,8 @@ class TestModelGraph(unittest.TestCase):
 
         :return:
         """
-        photo_list = db.session.query(Flickr.photo_id).distinct()
-        query = db.session.query(FlickrDetails).filter(FlickrDetails.photo_id.notin_(photo_list)).all()
-        for rec in query:
-            print("Ready to delete {pid}".format(pid=rec.photo_id))
+        key = self.app.config.get("FLICKR_KEY")
+        print(key)
 
 if __name__ == "__main__":
     unittest.main()

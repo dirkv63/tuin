@@ -1,12 +1,10 @@
-# import logging
 import tuin.db_model as ds
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, current_app
 from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
 from tuin.db_model import *
 from lib import my_env
-from config import *
 
 
 @main.route('/login', methods=['GET', 'POST'])
@@ -49,8 +47,9 @@ def pwd_update():
 @main.route('/<page>')
 @login_required
 def index(page=1):
+    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
     params = dict(
-        nodes=ds.get_pics().paginate(int(page), ITEMS_PER_PAGE, False),
+        nodes=ds.get_pics().paginate(int(page), 20, False),
         searchForm=Search(),
         title="Overzicht",
         page=page
@@ -62,10 +61,11 @@ def index(page=1):
 @main.route('/archive/<page>')
 @login_required
 def archive(page=1):
+    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
     archlist = ds.get_archive()
-    start = (int(page)-1) * ITEMS_PER_PAGE
-    end = int(page) * ITEMS_PER_PAGE
-    max_page = ((len(archlist)-1) // ITEMS_PER_PAGE) + 1
+    start = (int(page)-1) * items_per_page
+    end = int(page) * items_per_page
+    max_page = ((len(archlist)-1) // items_per_page) + 1
     params = dict(
         archlist = archlist[start:end],
         searchForm=Search(),
@@ -79,10 +79,11 @@ def archive(page=1):
 @main.route('/monthlist/<ym>/<page>')
 @login_required
 def monthlist(ym, page=1):
+    nodes_per_page = current_app.config.get("NODES_PER_PAGE")
     nodes = ds.get_nodes_for_month(ym)
-    start = (int(page)-1) * NODES_PER_PAGE
-    end = int(page) * NODES_PER_PAGE
-    max_page = ((len(nodes)-1) // NODES_PER_PAGE) + 1
+    start = (int(page)-1) * nodes_per_page
+    end = int(page) * nodes_per_page
+    max_page = ((len(nodes)-1) // nodes_per_page) + 1
     params = dict(
         ym=ym,
         title=my_env.monthdisp(ym),
@@ -112,12 +113,13 @@ def node(id):
 @main.route('/taxonomy/<id>/<page>')
 @login_required
 def taxonomy(id, page=1):
+    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
     term = Term.query.filter_by(id=id).one()
-    start = (int(page)-1) * ITEMS_PER_PAGE
-    end = int(page) * ITEMS_PER_PAGE
+    start = (int(page)-1) * items_per_page
+    end = int(page) * items_per_page
     nodes = [node for node in term.nodes]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = ((len(sel_nodes)-1) // ITEMS_PER_PAGE) + 1
+    max_page = ((len(sel_nodes)-1) // items_per_page) + 1
     params = dict(
         term_id=id,
         title=term.name,
@@ -133,12 +135,13 @@ def taxonomy(id, page=1):
 @main.route('/taxpics/<id>/<page>')
 @login_required
 def taxpics(id, page=1):
+    pics_per_page = current_app.config.get["PICS_PER_PAGE"]
     term = Term.query.filter_by(id=id).one()
-    start = (int(page)-1) * PICS_PER_PAGE
-    end = int(page) * PICS_PER_PAGE
+    start = (int(page)-1) * pics_per_page
+    end = int(page) * pics_per_page
     nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = ((len(sel_nodes)-1) // PICS_PER_PAGE) + 1
+    max_page = ((len(sel_nodes)-1) // pics_per_page) + 1
     params = dict(
         term_id=id,
         title=term.name,

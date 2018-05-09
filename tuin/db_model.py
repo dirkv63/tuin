@@ -1,4 +1,3 @@
-from config import *
 import flickrapi
 # import logging
 import sqlite3
@@ -99,7 +98,7 @@ class Flickr(db.Model):
     def delete(node_id):
         """
         This method will delete the node - picture record. This happens when the node is deleted or if the node changes
-        from type flickr to type blog or when a new blog record is created, so delete may be called for unexisting
+        from type flickr to type blog or when a new blog record is created, so delete may be called for non-existing
         records.
 
         :param node_id: ID of the node attached to this picture.
@@ -140,6 +139,39 @@ class FlickrDetails(db.Model):
     url_t = db.Column(db.Text, nullable=False)
     url_z = db.Column(db.Text, nullable=False)
     flickr_url = db.Column(db.Text, nullable=False)
+
+    @staticmethod
+    def update(pic):
+        """
+        :param pic: json dictionary with picture information.
+
+        :return:
+        """
+        flickr_obj = get_flickr_object()
+        try:
+            pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
+        except FlickrError:
+            # User error, no logging required
+            msg = "Flickr ID {pid} not found"
+            return msg
+        except KeyError:
+            # Application error, logging required.
+            msg = "Error in call, photo_id not defined as key: {p}".format(p=params)
+            current_app.logger.error(msg)
+            return msg
+        else:
+            FlickrDetails.update(pic)
+            try:
+                flickr_inst = db.session.query(Flickr).filter_by(node_id=params['node_id']).one()
+                flickr_inst.photo_id = params["photo_id"]
+            except NoResultFound:
+                flickr_inst = Flickr(**params)
+                db.session.add(flickr_inst)
+            db.session.commit()
+            db.session.refresh(flickr_inst)
+            # This can be a change in picture, check if orphan picture details need to be deleted.
+            FlickrDetails.delete()
+            return int(flickr_inst.id)
 
     @staticmethod
     def delete():
@@ -359,8 +391,8 @@ class User(UserMixin, db.Model):
 
 def get_flickr_object():
     # Todo no from config import *, use current_app.config.get
-    return flickrapi.FlickrAPI(FLICKR_KEY,
-                               FLICKR_SECRET,
+    return flickrapi.FlickrAPI(current_app.config.get("FLICKR_API"),
+                               current_app.config.get("FLICKR_SECRET"),
                                format="parsed_json")
 
 
