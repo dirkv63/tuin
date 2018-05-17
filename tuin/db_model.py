@@ -3,6 +3,7 @@ import flickrapi
 import sqlite3
 import time
 from . import db, lm
+from lib.my_env import date2epoch
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +11,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from flickrapi.exceptions import FlickrError
+
+
+flickr_size = dict(
+    Square="url_sq",
+    LargeSquare="url_q",
+    Thumbnail="url_t",
+    Small="url_s",
+    Small320="url_n",
+    Medium="url_m",
+    Medium640="url_z",
+    Medium800="url_c",
+    Large="url_l",
+    Original="url_o"
+)
 
 
 class Content(db.Model):
@@ -81,7 +96,7 @@ class Flickr(db.Model):
             current_app.logger.error(msg)
             return msg
         else:
-            FlickrDetails.update(pic)
+            FlickrDetails.update(params["photo_id"], pic)
             try:
                 flickr_inst = db.session.query(Flickr).filter_by(node_id=params['node_id']).one()
                 flickr_inst.photo_id = params["photo_id"]
@@ -122,7 +137,7 @@ class Flickr(db.Model):
 
 class FlickrDetails(db.Model):
     """
-    Table with the whereabouts of the Flickr pictures.
+    Table with the whereabouts of the Flickr pictures. This table needs to have the picture label.
     """
     __tablename__ = "flickrdetails"
     photo_id = db.Column(db.Integer, db.ForeignKey('flickr.photo_id'), primary_key=True)
@@ -141,37 +156,47 @@ class FlickrDetails(db.Model):
     flickr_url = db.Column(db.Text, nullable=False)
 
     @staticmethod
-    def update(pic):
+    def update(photo_id, pic):
         """
+        This method will create or update a Flickr Picture record with size information. It will create a record if
+        required and it will update the current version of the size URLs in all cases.
+
+        :param photo_id: Flickr ID of the picture.
+
         :param pic: json dictionary with picture information.
 
         :return:
         """
-        flickr_obj = get_flickr_object()
+        current_app.logger.info("Photo ID: {fid}".format(fid=photo_id))
+        current_app.logger.info("Sizes: {pic}".format(pic=pic))
+        # First get flickrdetails record
         try:
-            pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
-        except FlickrError:
-            # User error, no logging required
-            msg = "Flickr ID {pid} not found"
-            return msg
-        except KeyError:
-            # Application error, logging required.
-            msg = "Error in call, photo_id not defined as key: {p}".format(p=params)
-            current_app.logger.error(msg)
-            return msg
-        else:
-            FlickrDetails.update(pic)
+            flickrdetails_inst = db.session.query(FlickrDetails).filter_by(photo_id=photo_id).one()
+        except NoResultFound:
+            params = dict(photo_id=photo_id)
+            flickrdetails_inst = FlickrDetails(**params)
+            db.session.add(flickrdetails_inst)
+        # Then convert sizes list to sizes dictionary
+        size_list = pic["sizes"]["size"]
+        size = {}
+        for item in size_list:
+            size[item['label'].replace(" ", "")] = item["source"]
+        # Next find required sizes to set record columns
+        for k in flickr_size:
             try:
-                flickr_inst = db.session.query(Flickr).filter_by(node_id=params['node_id']).one()
-                flickr_inst.photo_id = params["photo_id"]
-            except NoResultFound:
-                flickr_inst = Flickr(**params)
-                db.session.add(flickr_inst)
-            db.session.commit()
-            db.session.refresh(flickr_inst)
-            # This can be a change in picture, check if orphan picture details need to be deleted.
-            FlickrDetails.delete()
-            return int(flickr_inst.id)
+                setattr(flickrdetails_inst, flickr_size[k], size[k])
+            except KeyError:
+                # If size not defined, log error and set to smallest size.
+                current_app.logger.error("Flickr ID {fid} size {k} not defined".format(fid=photo_id, k=k))
+                setattr(flickrdetails_inst, flickr_size[k], size["Square"])
+        # Now also collect title, date taken and flickr_url information
+        flickr_obj = get_flickr_object()
+        info = flickr_obj.photos.getInfo(photo_id=photo_id)
+        flickrdetails_inst.datetaken = date2epoch(info["photo"]["dates"]["taken"])
+        flickrdetails_inst.title = info["photo"]["title"]["_content"]
+        flickrdetails_inst.flickr_url = info["photo"]["urls"]["url"][0]["_content"]
+        db.session.commit()
+        return int(photo_id)
 
     @staticmethod
     def delete():
@@ -391,9 +416,9 @@ class User(UserMixin, db.Model):
 
 def get_flickr_object():
     # Todo no from config import *, use current_app.config.get
-    return flickrapi.FlickrAPI(current_app.config.get("FLICKR_API"),
+    return flickrapi.FlickrAPI(current_app.config.get("FLICKR_KEY"),
                                current_app.config.get("FLICKR_SECRET"),
-                               format="parsed_json")
+                               format="parsed-json")
 
 
 def init_session(dbconn, echo=False):

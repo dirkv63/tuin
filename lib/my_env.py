@@ -10,6 +10,8 @@ import logging.handlers
 import os
 import platform
 import re
+import time
+from calendar import timegm
 from datetime import datetime
 
 
@@ -71,6 +73,18 @@ def get_loghandler(scriptname, logdir, loglevel):
     # logger.addHandler(ch)
     # logger.addHandler(rfh)
     return rfh
+
+
+def date2epoch(ds):
+    """
+    This function will convert a date time string to epoch for storage in SQLite table.
+
+    :param ds: Date time string in format %Y-%m-%d %H:%M:%S
+
+    :return: epoch - seconds since 1/01/1970
+    """
+    utc_time = time.strptime(ds, "%Y-%m-%d %H:%M:%S")
+    return timegm(utc_time)
 
 
 def reformat_body(string, is_xhtml=True):

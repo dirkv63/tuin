@@ -135,7 +135,7 @@ def taxonomy(id, page=1):
 @main.route('/taxpics/<id>/<page>')
 @login_required
 def taxpics(id, page=1):
-    pics_per_page = current_app.config.get["PICS_PER_PAGE"]
+    pics_per_page = current_app.config.get("PICS_PER_PAGE")
     term = Term.query.filter_by(id=id).one()
     start = (int(page)-1) * pics_per_page
     end = int(page) * pics_per_page
