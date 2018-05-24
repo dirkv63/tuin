@@ -38,6 +38,18 @@ class Content(db.Model):
     body = db.Column(db.Text)
 
     @staticmethod
+    def delete(nid):
+        try:
+            content_inst = Content.query.filter_by(node_id=nid).one()
+        except NoResultFound:
+            current_app.logger.info("Trying to remove content record for node id {nid}, but no record found..."
+                                    .format(nid=nid))
+        else:
+            db.session.delete(content_inst)
+            db.session.commit()
+        return True
+
+    @staticmethod
     def update(**params):
         """
         This method will add or edit the node title or body.
@@ -65,7 +77,7 @@ class Flickr(db.Model):
     __tablename__ = "flickr"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
-    photo_id = db.Column(db.Integer)
+    photo_id = db.Column(db.Integer, db.ForeignKey('flickrdetails.photo_id'))
     flickrdetails = db.relationship("FlickrDetails", uselist=False)
 
     @staticmethod
@@ -88,7 +100,7 @@ class Flickr(db.Model):
             pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
         except FlickrError:
             # User error, no logging required
-            msg = "Flickr ID {pid} not found"
+            msg = "Flickr ID {pid} not found".format(pid=params["photo_id"])
             return msg
         except KeyError:
             # Application error, logging required.
@@ -116,6 +128,8 @@ class Flickr(db.Model):
         from type flickr to type blog or when a new blog record is created, so delete may be called for non-existing
         records.
 
+        As part of delete process, a call to FlickrDetails.delete is done, to remove potential orphan pictures.
+
         :param node_id: ID of the node attached to this picture.
 
         :return: 1 - integer. Flickr.update method may return msg (string) in case of errors.
@@ -126,7 +140,7 @@ class Flickr(db.Model):
             current_app.logger.debug("Got a request to delete Flickr record for node ID {nid}, but nid not found"
                                      .format(nid=node_id))
         else:
-            current_app.logger.info("Delete Node {nid} with Flickr ID {pid}"
+            current_app.logger.info("Delete Node {nid} with Flickr ID {pid} from Flickr"
                                     .format(nid=node_id, pid=flickr_inst.photo_id))
             db.session.delete(flickr_inst)
             db.session.commit()
@@ -140,7 +154,7 @@ class FlickrDetails(db.Model):
     Table with the whereabouts of the Flickr pictures. This table needs to have the picture label.
     """
     __tablename__ = "flickrdetails"
-    photo_id = db.Column(db.Integer, db.ForeignKey('flickr.photo_id'), primary_key=True)
+    photo_id = db.Column(db.Integer, primary_key=True)
     datetaken = db.Column(db.Integer, nullable=False)
     title = db.Column(db.Text, nullable=False)
     url_c = db.Column(db.Text, nullable=False)
@@ -213,11 +227,9 @@ class FlickrDetails(db.Model):
         photo_list = db.session.query(Flickr.photo_id).distinct()
         query = db.session.query(FlickrDetails).filter(FlickrDetails.photo_id.notin_(photo_list)).all()
         for rec in query:
-            current_app.logger.info("Delete flickr ID {pid}".format(pid=rec.photo_id))
-            """
+            current_app.logger.info("Delete flickr ID {pid} from FlickrDetails".format(pid=rec.photo_id))
             db.session.delete(rec)
             db.session.commit()
-            """
         return True
 
 
@@ -278,6 +290,7 @@ class Node(db.Model):
         node_inst = db.session.query(Node).filter_by(id=params['id']).first()
         node_inst.modified = int(time.time())
         node_inst.revcnt += 1
+        setattr(node_inst, "type", params["type"])
         db.session.commit()
         return
 
@@ -299,9 +312,20 @@ class Node(db.Model):
 
     @staticmethod
     def delete(nid):
-        node_inst = Node.query.filter_by(nid=nid).one()
-        db.session.delete(node_inst)
-        db.session.commit()
+        try:
+            node_inst = Node.query.filter_by(id=nid).one()
+        except NoResultFound:
+            current_app.logger.info("Trying to remove node record for node ID {nid}, but no record found"
+                                    .format(nid=nid))
+        else:
+            # Remove Flickr and FlickrDetails record if required
+            if node_inst.type == "flickr":
+                Flickr.delete(nid)
+            # Remove Content record
+            Content.delete(nid)
+            # Then remove node record.
+            db.session.delete(node_inst)
+            db.session.commit()
         return True
 
 
@@ -590,6 +614,30 @@ def get_terms_for_node(voc, node_id):
     return terms
 
 
+def get_title(title, planten):
+    """
+    This method will return the title for a node. If the title field is not empty, then this is returned. Otherwise if
+    at least 1 plant is selected from the vocabulary, the list of selected planten is choosen as title. Otherwise (No
+    title) is returned as title.
+
+    :param title: Current setting for the title
+
+    :param planten: List of planten selected for the post.
+
+    :return: title, list of planten or (Geen Titel).
+    """
+    if title:
+        return title
+    elif len(planten) > 0:
+        # Convert term.id to term.name
+        query = Term.query.filter(Term.id.in_(planten))
+        current_app.logger.warning(query)
+        plant_arr = [term.name for term in query.all()]
+        return ", ".join(plant_arr)
+    else:
+        return "(Geen titel)"
+
+
 def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     """
     This method will get the full node tree sorted on title and depth first in a recursive way
@@ -670,7 +718,7 @@ def update_taxonomy_for_node(nid, req_terms=None):
 
     :param nid: Node Id
 
-    :param req_terms: List of taxonomy terms that apply to the node Id
+    :param req_terms: List of taxonomy term IDs that apply to the node Id
 
     :return:
     """

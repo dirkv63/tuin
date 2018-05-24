@@ -1,5 +1,5 @@
 import tuin.db_model as ds
-from flask import render_template, flash, redirect, url_for, request, current_app
+from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
@@ -47,9 +47,9 @@ def pwd_update():
 @main.route('/<page>')
 @login_required
 def index(page=1):
-    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
+    pics_per_page= current_app.config.get("PICS_PER_PAGE")
     params = dict(
-        nodes=ds.get_pics().paginate(int(page), 20, False),
+        nodes=ds.get_pics().paginate(int(page), pics_per_page, False),
         searchForm=Search(),
         title="Overzicht",
         page=page
@@ -109,6 +109,129 @@ def node(id):
     return render_template('node.html', **params)
 
 
+@main.route('/post/add', methods=['GET', 'POST'])
+@main.route('/post/add/<book_id>', methods=['GET', 'POST'])
+@login_required
+def post_add(node_id=None, book_id=None):
+    """
+    This method allows to add or edit a blog text. A blog text is only text, no picture attached to it.
+
+    :param node_id: ID of the node for edit, or None for add
+
+    :param book_id: ID of the book page for which the page needs to be added.
+
+    :return:
+    """
+    form = TextAdd()
+    form.plaats.choices = ds.get_terms("Plaats")
+    form.planten.choices = ds.get_terms("Planten")
+    if request.method == "GET":
+        hdr = "Nieuw Bericht"
+        if node_id:
+            try:
+                node = Node.query.filter_by(id=node_id).one()
+            except NoResultFound:
+                msg = "Trying to edit Node ID {nid}, but node not found".format(nid=node_id)
+                current_app.logger.error(msg)
+                flash(msg, "error")
+            else:
+                hdr = "Aanpassen {t}".format(t=node.content.title)
+                form.title.data = node.content.title
+                form.body.data = node.content.body
+                form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
+                form.planten.data = ds.get_terms_for_node("Planten", node_id)
+                if node.type == "flickr":
+                    form.photo.data = node.flickr.photo_id
+                elif node.type == "book":
+                    del form.photo
+        temp_attribs = dict(
+            hdr=hdr,
+            form=form,
+            searchForm=Search()
+        )
+        return render_template('form.html', **temp_attribs)
+    else:
+        title = form.title.data
+        body = form.body.data
+        plaats = form.plaats.data
+        planten = form.planten.data
+        title = ds.get_title(title, planten)
+        # Todo - check if test on form.photo.data is sufficient, then remove length
+        if form.photo.data:
+            node_type = "flickr"
+        elif book_id:
+            node_type = "book"
+        else:
+            node_type = "blog"
+        params = dict(type=node_type)
+        if node_type == "book":
+            params["parent_id"] = book_id
+        if node_id:
+            params["id"] = node_id
+            Node.edit(**params)
+        else:
+            node_id = Node.add(**params)
+        params = dict(node_id=node_id, title=title, body=body)
+        Content.update(**params)
+        ds.update_taxonomy_for_node(node_id, plaats+planten)
+        if node_type == "flickr":
+            params = dict(
+                node_id=node_id,
+                photo_id=form.photo.data
+            )
+            res = Flickr.update(**params)
+        else:
+            res = Flickr.delete(node_id)
+        if isinstance(res, int):
+            # OK, succesful
+            return redirect(url_for('main.node', id=node_id))
+        else:
+            flash(res, "error")
+            temp_attribs = dict(
+                hdr="Aanpassing nodig",
+                form=form,
+                searchForm=Search()
+            )
+            return render_template('form.html', **temp_attribs)
+
+
+@main.route('/post/delete/<node_id>', methods=['GET', 'POST'])
+@login_required
+def post_delete(node_id):
+    """
+    This method allows to delete a post.
+
+    :param node_id: ID of the node for removal
+
+    :return:
+    """
+    try:
+        node_inst = Node.query.filter_by(id=node_id).one()
+    except NoResultFound:
+        msg = "Delete for Node ID {nid} not successful: Node ID not found.".format(nid=node_id)
+        current_app.logger.error(msg)
+        flash(msg, "error")
+    else:
+        title = node_inst.content.title
+        Node.delete(node_id)
+        msg = "Node {t} ({nid}) removed.".format(t=title, nid=node_id)
+        current_app.logger.info(msg)
+        flash(msg, "info")
+    return redirect(url_for('main.index'))
+
+@main.route('/post/edit/<node_id>', methods=['GET', 'POST'])
+@login_required
+def post_edit(node_id):
+    """
+    This method allows to edit a post. A post can be text only (blog) or have a link to Flickr Page ID attached.
+
+    :param node_id: Id of the node under review
+
+    :return:
+    """
+    return post_add(node_id=node_id)
+
+
 @main.route('/taxonomy/<id>')
 @main.route('/taxonomy/<id>/<page>')
 @login_required
@@ -151,90 +274,6 @@ def taxpics(id, page=1):
         searchForm=Search()
     )
     return render_template("taxpics.html", **params)
-
-
-@main.route('/blog/add', methods=['GET', 'POST'])
-@login_required
-def blog_add(node_id=None):
-    """
-    This method allows to add or edit a blog text. A blog text is only text, no picture attached to it.
-
-    :param node_id: ID of the node for edit, or None for add
-
-    :return:
-    """
-    form = TextAdd()
-    if request.method == "GET":
-        # Get Form.
-        form.plaats.choices = ds.get_terms("Plaats")
-        form.planten.choices = ds.get_terms("Planten")
-        if node_id:
-            # Todo - add error handling for invalid node_ids.
-            node = Node.query.filter_by(id=node_id).one()
-            hdr = "Aanpassen {t}".format(t=node.content.title)
-            form.title.data = node.content.title
-            form.body.data = node.content.body
-            form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
-            form.planten.data = ds.get_terms_for_node("Planten", node_id)
-            if node.type == "flickr":
-                form.photo.data = node.flickr.photo_id
-        else:
-            hdr = "Nieuwe Blog"
-        temp_attribs = dict(
-            hdr=hdr,
-            form=form,
-            searchForm=Search()
-        )
-        return render_template('form.html', **temp_attribs)
-    else:
-        title = form.title.data
-        body = form.body.data
-        plaats = form.plaats.data
-        planten = form.planten.data
-        if form.photo.data:
-            node_type = "flickr"
-        else:
-            node_type = "blog"
-        params = dict(type=node_type)
-        if node_id:
-            params["id"] = node_id
-            Node.edit(**params)
-        else:
-            node_id = Node.add(**params)
-        params = dict(node_id=node_id, title=title, body=body)
-        Content.update(**params)
-        ds.update_taxonomy_for_node(node_id, plaats+planten)
-        if node_type == "flickr":
-            params = dict(
-                node_id=node_id,
-                photo_id=form.photo.data
-            )
-            res = Flickr.update(**params)
-        else:
-            res = Flickr.delete(node_id)
-        if isinstance(res, int):
-            # OK, succesful
-            return redirect(url_for('main.node', id=node_id))
-        else:
-            flash(res, "error")
-            temp_attribs = dict(
-                hdr="Aanpassing nodig",
-                form=form,
-                searchForm=Search()
-            )
-            return render_template('form.html', **temp_attribs)
-
-@main.route('/blog/edit/<node_id>', methods=['GET', 'POST'])
-@login_required
-def blog_edit(node_id):
-    """
-    This method allows to edit a blog text. A blog text is only text, no picture attached to it.
-
-    :param node_id: Id of the node under review
-
-    :return:
-    """
-    return blog_add(node_id=node_id)
 
 
 @main.route("/timeline/<term_id>/<datestamp>")

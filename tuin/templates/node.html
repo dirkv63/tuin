@@ -48,14 +48,14 @@
             <h3>Acties</h3>
             <hr>
             <div class="btn-group-vertical" role="group" aria-label="Actions">
-                <a href="{{ url_for('main.index', page=45) }}" class="btn btn-default" role="button">
-                    Nieuwe Foto
+                <a href="{{ url_for('main.post_add') }}" class="btn btn-default" role="button">
+                    Nieuw Bericht
                 </a>
-                <a href="{{ url_for('main.blog_add') }}" class="btn btn-default" role="button">
-                    Nieuwe Tekst
+                <a href="{{ url_for('main.post_edit', node_id=node.id) }}" class="btn btn-default" role="button">
+                    Bericht Aanpassen
                 </a>
-                <a href="{{ url_for('main.blog_edit', node_id=node.id) }}" class="btn btn-default" role="button">
-                    Tekst Aanpassen
+                <a href="{{ url_for('main.post_delete', node_id=node.id) }}" class="btn btn-default" role="button">
+                    Bericht Verwijderen
                 </a>
             </div>
         </div>
