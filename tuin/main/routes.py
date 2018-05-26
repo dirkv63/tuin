@@ -118,7 +118,7 @@ def post_add(node_id=None, book_id=None):
 
     :param node_id: ID of the node for edit, or None for add
 
-    :param book_id: ID of the book page for which the page needs to be added.
+    :param book_id: ID of the parent page for which the page needs to be added.
 
     :return:
     """
@@ -142,8 +142,11 @@ def post_add(node_id=None, book_id=None):
                 form.planten.data = ds.get_terms_for_node("Planten", node_id)
                 if node.type == "flickr":
                     form.photo.data = node.flickr.photo_id
-                elif node.type == "book":
-                    del form.photo
+        try:
+            if book_id or (node.type == "book"):
+                del form.photo
+        except UnboundLocalError:
+            pass
         temp_attribs = dict(
             hdr=hdr,
             form=form,
@@ -157,10 +160,10 @@ def post_add(node_id=None, book_id=None):
         planten = form.planten.data
         title = ds.get_title(title, planten)
         # Todo - check if test on form.photo.data is sufficient, then remove length
-        if form.photo.data:
-            node_type = "flickr"
-        elif book_id:
+        if book_id:
             node_type = "book"
+        elif form.photo.data:
+            node_type = "flickr"
         else:
             node_type = "blog"
         params = dict(type=node_type)
@@ -229,7 +232,12 @@ def post_edit(node_id):
 
     :return:
     """
-    return post_add(node_id=node_id)
+    # If node is book, then get the parent_id
+    node_inst = Node.query.filter_by(id=node_id).one()
+    if node_inst.type == "book":
+        return post_add(node_id=node_id, book_id=node_inst.parent_id)
+    else:
+        return post_add(node_id=node_id)
 
 
 @main.route('/taxonomy/<id>')
@@ -298,6 +306,13 @@ def timeline(term_id, datestamp):
     if len(sel_nodes) > (pos+1):
         params["next_node"] = sel_nodes[pos+1]
     return render_template("timeline.html", **params)
+
+@main.route("/tuinplan")
+@login_required
+def tuinplan():
+    node_inst = Node.query.filter_by(id=904).one()
+    body = node_inst.content.body
+    return render_template("geschaaldplan.html", body=body)
 
 @main.route('/vocabulary/<id>/<target>')
 @login_required
