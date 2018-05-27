@@ -44,7 +44,7 @@ def pwd_update():
 
 
 @main.route('/')
-@main.route('/<page>')
+@main.route('/index/<page>')
 @login_required
 def index(page=1):
     pics_per_page= current_app.config.get("PICS_PER_PAGE")
