@@ -15,7 +15,7 @@
         <tr>
             <td>{{ node['created']|datestamp }}</td>
             <td>
-                <a href=" {{ url_for('main.book', id=node.nid) }}">{{ node.title }}</a>
+                <a href=" {{ url_for('main.node', id=node.nid) }}">{{ node.title }}</a>
             </td>
             <td>
                 {{ node['parent'] }}
