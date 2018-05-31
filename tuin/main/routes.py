@@ -142,6 +142,7 @@ def post_add(node_id=None, book_id=None):
                 form.planten.data = ds.get_terms_for_node("Planten", node_id)
                 if node.type == "flickr":
                     form.photo.data = node.flickr.photo_id
+                    form.node_date.data = False
         try:
             if book_id or (node.type == "book"):
                 del form.photo
@@ -158,6 +159,7 @@ def post_add(node_id=None, book_id=None):
         body = form.body.data
         plaats = form.plaats.data
         planten = form.planten.data
+        date_pic = form.node_date.data
         title = ds.get_title(title, planten)
         # Todo - check if test on form.photo.data is sufficient, then remove length
         if book_id:
@@ -183,6 +185,8 @@ def post_add(node_id=None, book_id=None):
                 photo_id=form.photo.data
             )
             res = Flickr.update(**params)
+            if date_pic:
+                Node.set_created(node_id)
         else:
             res = Flickr.delete(node_id)
         if isinstance(res, int):

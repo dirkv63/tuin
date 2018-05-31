@@ -3,7 +3,7 @@ import flickrapi
 import sqlite3
 import time
 from . import db, lm
-from lib.my_env import date2epoch
+from lib.my_env import date2epoch, datestamp
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -327,6 +327,18 @@ class Node(db.Model):
             db.session.delete(node_inst)
             db.session.commit()
         return True
+
+    @staticmethod
+    def set_created(nid):
+        # Set node created to Flickr datetaken
+        node_inst = Node.query.filter_by(id=nid).one()
+        nc = node_inst.created
+        fd = node_inst.flickr.flickrdetails.datetaken
+        current_app.logger.info("Node created datestamp from {nc} to {fd}".format(nc=datestamp(nc),
+                                                                                  fd=datestamp(fd)))
+        node_inst.created = fd
+        db.session.commit()
+        return
 
 
 class History(db.Model):

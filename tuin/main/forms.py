@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm as Form
-from wtforms import StringField, SubmitField, PasswordField, BooleanField, TextAreaField, SelectField, HiddenField
+from wtforms import StringField, SubmitField, PasswordField, BooleanField, TextAreaField, SelectField
 from wtforms import SelectMultipleField
 import wtforms.validators as wtv
 
@@ -38,6 +38,8 @@ class PwdUpdate(Form):
 class TextAdd(Form):
     title = StringField('Titel')
     photo = StringField('Foto ID')
+    node_date = BooleanField(u"Gebruik datum van foto", description=u"Gebruik datum van de foto voor 'Node Create'",
+                             default=True)
     body = CKTextAreaField('Beschrijving')
     plaats = SelectMultipleField('Plaats: ', coerce=str)
     planten = SelectMultipleField('Planten', coerce=str)
