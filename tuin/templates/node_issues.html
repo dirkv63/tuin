@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-9">
+        <h1>
+            {{ title }}
+        </h1>
+        <table class="table table-hover table-bordered">
+        <tr>
+            <th>Node ID</th>
+            <th>Created</th>
+            <th>Modified</th>
+            <th>Revision Count</th>
+            <th>Action</th>
+        </tr>
+        {% for node in nodes %}
+        <tr>
+            <td>{{ node.id }}</td>
+            <td>{{ node.created|datestamp }}</td>
+            <td>{{ node.modified|datestamp }}</td>
+            <td>{{ node.revcnt }}</td>
+            <td><a href="{{ url_for(nextfun, nid=node.id) }}">Remove</td>
+        </tr>
+        {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-3 text-center">
+        <div class="hidden-sm hidden-xs marsu">
+            <img class="img-responsive center-block"  src="{{ url_for('static', filename='marsu.gif') }}">
+        </div>
+        {{ macros.search(searchForm) }}
+    </div>
+</div>
+{% endblock %}

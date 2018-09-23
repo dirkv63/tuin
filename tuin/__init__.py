@@ -15,7 +15,9 @@ lm.login_view = 'main.login'
 def create_app(config_name):
     """
     Create an application instance.
+
     :param config_name: development, test or production
+
     :return: the configured application object.
     """
 
@@ -25,9 +27,10 @@ def create_app(config_name):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-    # Configure Logger
-    hdl = my_env.get_loghandler(__name__, app.config.get('LOGDIR'), app.config.get('LOGLEVEL'))
-    app.logger.addHandler(hdl)
+    # Configure Logger, except for Test
+    if config_name.lower() != "testing":
+        hdl = my_env.get_loghandler(__name__, app.config.get('LOGDIR'), app.config.get('LOGLEVEL'))
+        app.logger.addHandler(hdl)
 
     app.logger.info("Start Application")
 

@@ -77,5 +77,13 @@ class TestModelGraph(unittest.TestCase):
         key = self.app.config.get("FLICKR_KEY")
         print(key)
 
+    def test_flickr_no_photoId(self):
+        nodes = Node.query.filter(Node.type == "flickr", Node.flickr == None)
+        print(nodes)
+        print("Issues:")
+        for rec in nodes.all():
+            print("NID: {nid}".format(nid=rec.id))
+        print("End Issues")
+
 if __name__ == "__main__":
     unittest.main()

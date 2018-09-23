@@ -629,7 +629,7 @@ def get_terms_for_node(voc, node_id):
 def get_title(title, planten):
     """
     This method will return the title for a node. If the title field is not empty, then this is returned. Otherwise if
-    at least 1 plant is selected from the vocabulary, the list of selected planten is choosen as title. Otherwise (No
+    at least 1 plant is selected from the vocabulary, the list of selected planten is chosen as title. Otherwise (No
     title) is returned as title.
 
     :param title: Current setting for the title

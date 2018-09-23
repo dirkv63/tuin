@@ -41,12 +41,10 @@ def get_loghandler(scriptname, logdir, loglevel):
 
     :return: logging handler, so that it can be added as a Flask handler to an application.
     """
-    modulename = get_modulename(scriptname)
     loglevel = loglevel.upper()
-    # Extract Computername
-    computername = platform.node()
     # Define logfileName
-    logfile = logdir + "/" + modulename + "_" + computername + ".log"
+    fn = "{module}_{host}.log".format(module=get_modulename(scriptname), host=platform.node())
+    logfile = os.path.join(logdir, fn)
     # Configure the root logger
     logger = logging.getLogger()
     level = logging.getLevelName(loglevel)

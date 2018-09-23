@@ -311,6 +311,24 @@ def timeline(term_id, datestamp):
         params["next_node"] = sel_nodes[pos+1]
     return render_template("timeline.html", **params)
 
+@main.route("/tools/fd")
+@main.route("/tools/fd/<nid>")
+@login_required
+def tools_fd(nid=None):
+    """"
+    This method will find Nodes type flickr that do not have a flickr detail attached to it.
+    This is causing an application crash.
+    """
+    if nid:
+        flash("Remove Node id {nid}".format(nid=nid), "warning")
+        Node.query.filter_by(id=nid).delete()
+    nodes = Node.query.filter(Node.type == "flickr", Node.flickr == None).all()
+    params = dict(nodes=nodes,
+                  title="Nodes with No Flickr Details",
+                  nextfun="main.tools_fd",
+                  searchForm=Search())
+    return render_template("node_issues.html", **params)
+
 @main.route("/tuinplan")
 @login_required
 def tuinplan():
