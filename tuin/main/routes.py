@@ -48,11 +48,13 @@ def pwd_update():
 @login_required
 def index(page=1):
     pics_per_page= current_app.config.get("PICS_PER_PAGE")
+    public_folder = current_app.config.get("PUBLIC_FOLDER")
     params = dict(
         nodes=ds.get_pics().paginate(int(page), pics_per_page, False),
         searchForm=Search(),
         title="Overzicht",
-        page=page
+        page=page,
+        public_folder=public_folder
     )
     return render_template("pic_matrix.html", **params)
 
@@ -117,9 +119,7 @@ def post_add(node_id=None, book_id=None):
     This method allows to add or edit a blog text. A blog text is only text, no picture attached to it.
 
     :param node_id: ID of the node for edit, or None for add
-
     :param book_id: ID of the parent page for which the page needs to be added.
-
     :return:
     """
     form = TextAdd()

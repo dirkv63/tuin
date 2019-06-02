@@ -17,7 +17,6 @@ def create_app(config_name):
     Create an application instance.
 
     :param config_name: development, test or production
-
     :return: the configured application object.
     """
 

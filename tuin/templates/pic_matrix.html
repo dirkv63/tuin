@@ -16,7 +16,9 @@
                     </a>
                     <br>
                     {% if node.type == "flickr" %}
-                        <img src="{{ node.flickr.flickrdetails.url_q }}" class="square center-block">
+                        <!--img src="{{ node.flickr.flickrdetails.url_q }}" class="square center-block"-->
+                        <img src="{{ public_folder }}original/{{ node.photo.filename }}"
+                             class="square center-block">
                     {% else %}
                         <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square center-block">
                     {% endif %}

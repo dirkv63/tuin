@@ -92,7 +92,6 @@ class Flickr(db.Model):
         Finally a call to delete orphan FlickrDetails records is done.
 
         :param params: Dictionary with node_id and photo_id as keys.
-
         :return: msg (string) in case of problems, record ID (int) otherwise.
         """
         flickr_obj = get_flickr_object()
@@ -131,7 +130,6 @@ class Flickr(db.Model):
         As part of delete process, a call to FlickrDetails.delete is done, to remove potential orphan pictures.
 
         :param node_id: ID of the node attached to this picture.
-
         :return: 1 - integer. Flickr.update method may return msg (string) in case of errors.
         """
         try:
@@ -245,6 +243,17 @@ class Lophoto(db.Model):
     created = db.Column(db.Integer, nullable=False)
 
 
+class Photo(db.Model):
+    """
+    Table containing information about the pictures on pcloud.
+    """
+    __tablename__ = "photo"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
+    filename = db.Column(db.Text, nullable=False)
+    # created = db.Column(db.Integer, nullable=False)
+
+
 class Node(db.Model):
     """
     Table containing the information of the database.
@@ -263,6 +272,7 @@ class Node(db.Model):
     content = db.relationship("Content", backref="node", uselist=False)
     flickr = db.relationship("Flickr", backref="node", uselist=False)
     lophoto = db.relationship("Lophoto", backref="node", uselist=False)
+    photo = db.relationship("Photo", backref="node", uselist=False)
     terms = db.relationship("Term", secondary="taxonomy", backref="nodes")
 
     @staticmethod
