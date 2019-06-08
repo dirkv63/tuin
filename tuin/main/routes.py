@@ -4,7 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
 from tuin.db_model import *
-from lib import my_env
+from tuin.lib import my_env
 
 
 @main.route('/login', methods=['GET', 'POST'])

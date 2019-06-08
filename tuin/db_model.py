@@ -3,7 +3,7 @@ import flickrapi
 import sqlite3
 import time
 from . import db, lm
-from lib.my_env import date2epoch, datestamp
+from tuin.lib.my_env import date2epoch, datestamp
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash

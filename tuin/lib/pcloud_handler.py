@@ -1,4 +1,5 @@
 import logging
+import os
 import requests
 
 
@@ -9,16 +10,14 @@ class PcloudHandler:
     List method allows to list all files in the specified folder. Logout method will close the connection.
     """
 
-    def __init__(self, config_hdl):
+    def __init__(self):
         """
         On initialization a connection to pcloud account is done.
-
-        :param config_hdl:
         """
-        user = config_hdl["Pcloud"]["user"]
-        passwd = config_hdl["Pcloud"]["passwd"]
+        user = os.getenv("PCLOUD_USER")
+        passwd = os.getenv("PCLOUD_PWD")
         params = dict(username=user, password=passwd, getauth=1)
-        self.url_base = config_hdl["Pcloud"]["home"]
+        self.url_base = os.getenv("PCLOUD_HOME")
         method = "userinfo"
         url = self.url_base + method
         self.session = requests.Session()

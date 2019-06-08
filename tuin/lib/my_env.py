@@ -4,6 +4,7 @@ setup and initializing the config file.
 Also other utilities find their home here.
 """
 
+import configparser
 # import datetime
 import logging
 import logging.handlers
@@ -14,20 +15,20 @@ import sys
 import time
 from calendar import timegm
 from datetime import datetime
+from dotenv import load_dotenv
 
 
 def init_env(projectname, filename):
     """
-    This function will initialize the environment: Find and return handle to config.py file and set-up logging.
-    
+    This function will initialize the environment: Find and return handle to config file and set-up logging.
+
     :param projectname: Name that will be used to find ini file in properties subdirectory.
     :param filename: Filename (__file__) of the calling script (for logfile).
-    :return: config.py handle
+    :return: config handle
     """
-    projectname = projectname
     modulename = get_modulename(filename)
     config = get_inifile(projectname)
-    my_log = init_loghandler(modulename, config["Main"]["logdir"], config["Main"]["loglevel"])
+    my_log = init_loghandler(modulename)
     my_log.info('Start Application')
     return config
 
@@ -36,95 +37,83 @@ def get_inifile(projectname):
     """
     Read Project configuration ini file in subdirectory properties. Config ini filename is the projectname.
     The ini file is located in the properties module, which is sibling of the lib module.
+    Environment settings defined in .env file are exported as well. The .env file needs to be in the project main
+    directory.
+
     :param projectname: Name of the project.
     :return: Object reference to the inifile.
     """
     # Use Project Name as ini file.
-    # TODO: review procedure to get directory name instead of relative properties/ path.
-    if getattr(sys, 'frozen', False):
-        # Running Frozen (pyinstaller executable)
-        configfile = projectname + ".ini"
-    else:
-        # Running Live
-        # properties directory is sibling of lib directory.
-        (filepath_lib, _) = os.path.split(__file__)
-        (filepath, _) = os.path.split(filepath_lib)
-        # configfile = filepath + "/properties/" + projectname + ".ini"
-        configfile = os.path.join(filepath, 'properties', "{p}.ini".format(p=projectname))
+    (filepath_lib, _) = os.path.split(__file__)
+    (filepath, _) = os.path.split(filepath_lib)
+    # configfile = filepath + "/properties/" + projectname + ".ini"
+    configfile = os.path.join(filepath, 'properties', "{p}.ini".format(p=projectname))
     ini_config = configparser.ConfigParser()
     try:
         f = open(configfile)
         ini_config.read_file(f)
         f.close()
     except FileNotFoundError:
-        e = sys.exc_info()[1]
-        ec = sys.exc_info()[0]
-        log_msg = "Read Inifile not successful: %s (%s)"
-        print(log_msg % (e, ec))
-        sys.exit(1)
+        # If no Config file defined, then return empty dictionary.
+        ini_config = {}
+    # envfile is 2 levels up from this script
+    envpath = os.path.dirname(filepath)
+    envfile = os.path.join(envpath, ".env")
+    load_dotenv(dotenv_path=envfile)
     return ini_config
 
 
 def get_modulename(scriptname):
     """
-    Modulename is required for logfile and sometimes for properties file. Module name is the filename, without extension
-    and without directory path.
+    Modulename is required for logfile and for properties file.
 
-    :param scriptname: Name of the script for which modulename is required. Use __file__ in the calling application.
+    :param scriptname: Name of the script for which modulename is required. Use __file__.
     :return: Module Filename from the calling script.
     """
     # Extract calling application name
     (filepath, filename) = os.path.split(scriptname)
-    (modulename, _) = os.path.splitext(filename)
-    return modulename
+    (module, fileext) = os.path.splitext(filename)
+    return module
 
 
-def init_loghandler(scriptname, logdir, loglevel):
+def init_loghandler(modulename):
     """
     This function initializes the loghandler. Logfilename consists of calling module name + computername.
-    Logfile directory is read from the project .ini file.
     Format of the logmessage is specified in basicConfig function.
-    This is for Log Handler configuration. If basic log file configuration is required, then use init_logfile.
-    Review logger, there seems to be a conflict with the flask logger.
-    :param scriptname: Name of the calling module.
-    :param logdir: Directory of the logfile.
-    :param loglevel: The loglevel for logging.
-    :return: logging handler
+
+    :param modulename: The name of the module. Each module will create it's own logfile.
+    :return: Log Handler
     """
-    modulename = get_modulename(scriptname)
-    loglevel = loglevel.upper()
-    # Extract Computername
-    computername = platform.node()
+    logdir = os.getenv("LOGDIR")
+    loglevel = os.getenv("LOGLEVEL").upper()
     # Define logfileName
-    logfile = logdir + "/" + modulename + "_" + computername + ".log"
-    # Set loglevel for bolt driver to warning
-    logging.getLogger("neo4j.bolt").setLevel(logging.WARNING)
-    # logging.getLogger("neo4j.http").setLevel(logging.WARNING)
-    logging.getLogger("httpstream").setLevel(logging.WARNING)
+    logfn = "{module}_{host}.log".format(module=modulename, host=platform.node())
+    logfile = os.path.join(logdir, logfn)
     # Configure the root logger
     logger = logging.getLogger()
     level = logging.getLevelName(loglevel)
     logger.setLevel(level)
-    # Create Console Handler
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    # Create Rotating File Handler
     # Get logfiles of 1M
     maxbytes = 1024 * 1024
     rfh = logging.handlers.RotatingFileHandler(logfile, maxBytes=maxbytes, backupCount=5)
     # Create Formatter for file
     formatter_file = logging.Formatter(fmt='%(asctime)s|%(module)s|%(funcName)s|%(lineno)d|%(levelname)s|%(message)s',
                                        datefmt='%d/%m/%Y|%H:%M:%S')
+    # Add Formatter to Rotating File Handler
+    rfh.setFormatter(formatter_file)
+    # Add Handler to the logger
+    logger.addHandler(rfh)
+    # Configure Console Handler
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
     formatter_console = logging.Formatter(fmt='%(asctime)s - %(module)s - %(funcName)s - %(lineno)d - %(levelname)s -'
                                               ' %(message)s',
                                           datefmt='%H:%M:%S')
     # Add Formatter to Console Handler
     ch.setFormatter(formatter_console)
-    # Add Formatter to Rotating File Handler
-    rfh.setFormatter(formatter_file)
-    # Add Handler to the logger
-    # logger.addHandler(ch)
-    logger.addHandler(rfh)
+    logger.addHandler(ch)
+    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('httpstream').setLevel(logging.WARNING)
     return logger
 
 

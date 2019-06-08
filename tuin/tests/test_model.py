@@ -2,12 +2,10 @@
 This procedure will test the classes of the models_graph.
 """
 
-import datetime
 import unittest
 
-from tuin import create_app, db_model as ds
+from tuin import create_app
 from tuin.db_model import *
-from lib import my_env
 
 
 # @unittest.skip("Focus on Coverage")
