@@ -15,8 +15,9 @@
                         {{ node.content.title|truncate(18) }}
                     </a>
                     <br>
-                    {% if node.type == "flickr" %}
-                        <img src="{{node.flickr.flickrdetails.url_q}}" class="square center-block">
+                    {% if node.type == "photo" %}
+                        <img src="{{ folders['public'] }}{{ folders['small'] }}{{ node.photo.filename }}"
+                             class="square center-block">
                     {% else %}
                         <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="square center-block">
                     {% endif %}

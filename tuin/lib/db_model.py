@@ -1,30 +1,14 @@
-import flickrapi
 # import logging
 import sqlite3
 import time
-from . import db, lm
-from tuin.lib.my_env import date2epoch, datestamp
+from tuin import db, lm
+from tuin.lib.my_env import datestamp
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
-from flickrapi.exceptions import FlickrError
-
-
-flickr_size = dict(
-    Square="url_sq",
-    LargeSquare="url_q",
-    Thumbnail="url_t",
-    Small="url_s",
-    Small320="url_n",
-    Medium="url_m",
-    Medium640="url_z",
-    Medium800="url_c",
-    Large="url_l",
-    Original="url_o"
-)
 
 
 class Content(db.Model):
@@ -70,167 +54,6 @@ class Content(db.Model):
         return content_inst.id
 
 
-class Flickr(db.Model):
-    """
-    Table containing details of the Flickr Picture
-    """
-    __tablename__ = "flickr"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
-    photo_id = db.Column(db.Integer, db.ForeignKey('flickrdetails.photo_id'))
-    flickrdetails = db.relationship("FlickrDetails", uselist=False)
-
-    @staticmethod
-    def update(**params):
-        """
-        This method will add or edit the flickr information.
-        First the Flickr detail info is collected. Then call to update Flickr Details.
-        Next is check for existing flickr record for the node. If it exist, the photo_id is filled in. It may overwrite
-        an existing photo_id if there was a change.
-        If flickr record does not exist, it will be created.
-
-        Finally a call to delete orphan FlickrDetails records is done.
-
-        :param params: Dictionary with node_id and photo_id as keys.
-        :return: msg (string) in case of problems, record ID (int) otherwise.
-        """
-        flickr_obj = get_flickr_object()
-        try:
-            pic = flickr_obj.photos.getSizes(photo_id=params["photo_id"])
-        except FlickrError:
-            # User error, no logging required
-            msg = "Flickr ID {pid} not found".format(pid=params["photo_id"])
-            return msg
-        except KeyError:
-            # Application error, logging required.
-            msg = "Error in call, photo_id not defined as key: {p}".format(p=params)
-            current_app.logger.error(msg)
-            return msg
-        else:
-            FlickrDetails.update(params["photo_id"], pic)
-            try:
-                flickr_inst = db.session.query(Flickr).filter_by(node_id=params['node_id']).one()
-                flickr_inst.photo_id = params["photo_id"]
-            except NoResultFound:
-                flickr_inst = Flickr(**params)
-                db.session.add(flickr_inst)
-            db.session.commit()
-            db.session.refresh(flickr_inst)
-            # This can be a change in picture, check if orphan picture details need to be deleted.
-            FlickrDetails.delete()
-            return int(flickr_inst.id)
-
-    @staticmethod
-    def delete(node_id):
-        """
-        This method will delete the node - picture record. This happens when the node is deleted or if the node changes
-        from type flickr to type blog or when a new blog record is created, so delete may be called for non-existing
-        records.
-
-        As part of delete process, a call to FlickrDetails.delete is done, to remove potential orphan pictures.
-
-        :param node_id: ID of the node attached to this picture.
-        :return: 1 - integer. Flickr.update method may return msg (string) in case of errors.
-        """
-        try:
-            flickr_inst = db.session.query(Flickr).filter_by(node_id=node_id).one()
-        except NoResultFound:
-            current_app.logger.debug("Got a request to delete Flickr record for node ID {nid}, but nid not found"
-                                     .format(nid=node_id))
-        else:
-            current_app.logger.info("Delete Node {nid} with Flickr ID {pid} from Flickr"
-                                    .format(nid=node_id, pid=flickr_inst.photo_id))
-            db.session.delete(flickr_inst)
-            db.session.commit()
-            # Check for orphan flickr details records
-            FlickrDetails.delete()
-        return 1
-
-
-class FlickrDetails(db.Model):
-    """
-    Table with the whereabouts of the Flickr pictures. This table needs to have the picture label.
-    """
-    __tablename__ = "flickrdetails"
-    photo_id = db.Column(db.Integer, primary_key=True)
-    datetaken = db.Column(db.Integer, nullable=False)
-    title = db.Column(db.Text, nullable=False)
-    url_c = db.Column(db.Text, nullable=False)
-    url_l = db.Column(db.Text, nullable=False)
-    url_m = db.Column(db.Text, nullable=False)
-    url_n = db.Column(db.Text, nullable=False)
-    url_o = db.Column(db.Text, nullable=False)
-    url_q = db.Column(db.Text, nullable=False)
-    url_s = db.Column(db.Text, nullable=False)
-    url_sq = db.Column(db.Text, nullable=False)
-    url_t = db.Column(db.Text, nullable=False)
-    url_z = db.Column(db.Text, nullable=False)
-    flickr_url = db.Column(db.Text, nullable=False)
-
-    @staticmethod
-    def update(photo_id, pic):
-        """
-        This method will create or update a Flickr Picture record with size information. It will create a record if
-        required and it will update the current version of the size URLs in all cases.
-
-        :param photo_id: Flickr ID of the picture.
-
-        :param pic: json dictionary with picture information.
-
-        :return:
-        """
-        current_app.logger.info("Photo ID: {fid}".format(fid=photo_id))
-        current_app.logger.info("Sizes: {pic}".format(pic=pic))
-        # First get flickrdetails record
-        try:
-            flickrdetails_inst = db.session.query(FlickrDetails).filter_by(photo_id=photo_id).one()
-        except NoResultFound:
-            params = dict(photo_id=photo_id)
-            flickrdetails_inst = FlickrDetails(**params)
-            db.session.add(flickrdetails_inst)
-        # Then convert sizes list to sizes dictionary
-        size_list = pic["sizes"]["size"]
-        size = {}
-        for item in size_list:
-            size[item['label'].replace(" ", "")] = item["source"]
-        # Next find required sizes to set record columns
-        for k in flickr_size:
-            try:
-                setattr(flickrdetails_inst, flickr_size[k], size[k])
-            except KeyError:
-                # If size not defined, log error and set to smallest size.
-                current_app.logger.error("Flickr ID {fid} size {k} not defined".format(fid=photo_id, k=k))
-                setattr(flickrdetails_inst, flickr_size[k], size["Square"])
-        # Now also collect title, date taken and flickr_url information
-        flickr_obj = get_flickr_object()
-        info = flickr_obj.photos.getInfo(photo_id=photo_id)
-        flickrdetails_inst.datetaken = date2epoch(info["photo"]["dates"]["taken"])
-        flickrdetails_inst.title = info["photo"]["title"]["_content"]
-        flickrdetails_inst.flickr_url = info["photo"]["urls"]["url"][0]["_content"]
-        db.session.commit()
-        return int(photo_id)
-
-    @staticmethod
-    def delete():
-        """
-        This method will delete all orphan flickrdetail records. It will check for photo_ids in flickrdetails that are
-        not in flickr table, so no node is connected to it. These photo_ids will be deleted.
-
-        select * from flickrdetails
-        where photo_id not in (select photo_id from flickr)
-
-        :return:
-        """
-        current_app.logger.info("Find orphan Flickr IDs to remove from FlickrDetails")
-        photo_list = db.session.query(Flickr.photo_id).distinct()
-        query = db.session.query(FlickrDetails).filter(FlickrDetails.photo_id.notin_(photo_list)).all()
-        for rec in query:
-            current_app.logger.info("Delete flickr ID {pid} from FlickrDetails".format(pid=rec.photo_id))
-            db.session.delete(rec)
-            db.session.commit()
-        return True
-
-
 class Lophoto(db.Model):
     """
     Table containing information about the local pictures.
@@ -253,6 +76,29 @@ class Photo(db.Model):
     filename = db.Column(db.Text, nullable=False)
     # created = db.Column(db.Integer, nullable=False)
 
+    @staticmethod
+    def delete(node_id):
+        """
+        This method will delete the node - photo record. This happens when the node is deleted or if the node changes
+        from type photo to type blog or when a new blog record is created, so delete may be called for non-existing
+        records.
+        The photo record is deleted but the photo is not removed from storage (pcloud).
+
+        :param node_id: ID of the node attached to this picture..
+        :return: 1 - integer.
+        """
+        try:
+            photo_inst = db.session.query(Photo).filter_by(node_id=node_id).one()
+        except NoResultFound:
+            current_app.logger.info("Got a request to delete Photo record for node ID {nid}, but nid not found"
+                                    .format(nid=node_id))
+        else:
+            current_app.logger.info("Delete Node {nid} with Photo ID {pid} from Photo"
+                                    .format(nid=node_id, pid=photo_inst.id))
+            db.session.delete(photo_inst)
+            db.session.commit()
+        return 1
+
 
 class Node(db.Model):
     """
@@ -270,7 +116,6 @@ class Node(db.Model):
                                backref=db.backref('parent', remote_side=[id])
                                )
     content = db.relationship("Content", backref="node", uselist=False)
-    flickr = db.relationship("Flickr", backref="node", uselist=False)
     lophoto = db.relationship("Lophoto", backref="node", uselist=False)
     photo = db.relationship("Photo", backref="node", uselist=False)
     terms = db.relationship("Term", secondary="taxonomy", backref="nodes")
@@ -294,7 +139,6 @@ class Node(db.Model):
         This method will edit the node title or body.
 
         :param params: Dictionary with title and body as keys.
-
         :return:
         """
         node_inst = db.session.query(Node).filter_by(id=params['id']).first()
@@ -328,9 +172,8 @@ class Node(db.Model):
             current_app.logger.info("Trying to remove node record for node ID {nid}, but no record found"
                                     .format(nid=nid))
         else:
-            # Remove Flickr and FlickrDetails record if required
-            if node_inst.type == "flickr":
-                Flickr.delete(nid)
+            if node_inst.type == "photo":
+                Photo.delete(nid)
             # Remove Content record
             Content.delete(nid)
             # Then remove node record.
@@ -340,13 +183,16 @@ class Node(db.Model):
 
     @staticmethod
     def set_created(nid):
-        # Set node created to Flickr datetaken
+        # Set node created date to Create Date picture
         node_inst = Node.query.filter_by(id=nid).one()
         nc = node_inst.created
+        # Todo Collect date created from picture.
+        """
         fd = node_inst.flickr.flickrdetails.datetaken
         current_app.logger.info("Node created datestamp from {nc} to {fd}".format(nc=datestamp(nc),
                                                                                   fd=datestamp(fd)))
         node_inst.created = fd
+        """
         db.session.commit()
         return
 
@@ -460,21 +306,12 @@ class User(UserMixin, db.Model):
         return "<User: {user}>".format(user=self.username)
 
 
-def get_flickr_object():
-    # Todo no from config import *, use current_app.config.get
-    return flickrapi.FlickrAPI(current_app.config.get("FLICKR_KEY"),
-                               current_app.config.get("FLICKR_SECRET"),
-                               format="parsed-json")
-
-
 def init_session(dbconn, echo=False):
     """
     This function configures the connection to the database and returns the session object.
 
     :param dbconn: Name of the sqlite3 database.
-
     :param echo: True / False, depending if echo is required. Default: False
-
     :return: session object.
     """
     conn_string = "sqlite:///{db}".format(db=dbconn)
@@ -545,7 +382,6 @@ def get_node_attribs(nid):
     This method will collect the attributes required to display a node.
 
     :param nid: Node ID for the node
-
     :return: Dictionary with the attributes required to display the node.
     """
     node = Node.query.filter_by(id=nid).one()
@@ -588,7 +424,7 @@ def get_pics():
     :return:
     """
     node_order = Node.created.desc()
-    nodes = Node.query.filter((Node.type == "flickr") | (Node.type == "lophoto")).order_by(node_order)
+    nodes = Node.query.filter((Node.type == "photo") | (Node.type == "lophoto")).order_by(node_order)
     return nodes
 
 
@@ -665,15 +501,11 @@ def get_tree(parent_id=-1, tree=None, level="", exclnid=-1):
     This method will get the full node tree sorted on title and depth first in a recursive way
 
     :param parent_id: ID for the parent
-
     :param tree: Node tree so far
-
     :param level: Level so far.
-
     :param exclnid: Specifies node nid for which descendants do not need to be acquired. For adding a node to
     another parent, then the node itself and its children should not be included, so exclnid needs to be nid
     of the node that will be moved.
-
     :return: list with (nid, label) per node. This is format required by SelectField.
     """
     if not tree:

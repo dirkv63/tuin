@@ -2,12 +2,11 @@
 This script reads from a directory and converts every image into a medium and small format. The images are saved.
 """
 
-import csv
 import logging
 import os
 from tuin.lib import my_env, pcloud_handler
 
-from PIL import Image, ImageFile
+from PIL import ImageFile
 from PIL.ExifTags import TAGS
 from PIL.Image import LANCZOS
 

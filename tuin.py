@@ -1,6 +1,6 @@
 import platform
 from tuin import create_app
-from tuin.db_model import User
+from tuin.lib.db_model import User
 from waitress import serve
 
 

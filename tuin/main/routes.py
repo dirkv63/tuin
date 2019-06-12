@@ -1,9 +1,10 @@
-import tuin.db_model as ds
+import os
+import tuin.lib.db_model as ds
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, login_user, logout_user, current_user
 from .forms import *
 from . import main
-from tuin.db_model import *
+from tuin.lib.db_model import *
 from tuin.lib import my_env
 
 
@@ -47,14 +48,12 @@ def pwd_update():
 @main.route('/index/<page>')
 @login_required
 def index(page=1):
-    pics_per_page= current_app.config.get("PICS_PER_PAGE")
-    public_folder = current_app.config.get("PUBLIC_FOLDER")
     params = dict(
-        nodes=ds.get_pics().paginate(int(page), pics_per_page, False),
+        nodes=ds.get_pics().paginate(int(page), current_app.config['PICS_PER_PAGE'], False),
         searchForm=Search(),
         title="Overzicht",
         page=page,
-        public_folder=public_folder
+        folders=my_env.get_pic_folders()
     )
     return render_template("pic_matrix.html", **params)
 
@@ -63,7 +62,7 @@ def index(page=1):
 @main.route('/archive/<page>')
 @login_required
 def archive(page=1):
-    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
+    items_per_page = current_app.config["ITEMS_PER_PAGE"]
     archlist = ds.get_archive()
     start = (int(page)-1) * items_per_page
     end = int(page) * items_per_page
@@ -81,7 +80,7 @@ def archive(page=1):
 @main.route('/monthlist/<ym>/<page>')
 @login_required
 def monthlist(ym, page=1):
-    nodes_per_page = current_app.config.get("NODES_PER_PAGE")
+    nodes_per_page = current_app.config["NODES_PER_PAGE"]
     nodes = ds.get_nodes_for_month(ym)
     start = (int(page)-1) * nodes_per_page
     end = int(page) * nodes_per_page
@@ -92,7 +91,8 @@ def monthlist(ym, page=1):
         nodes=nodes[start:end],
         page=page,
         max_page=max_page,
-        searchForm=Search()
+        searchForm=Search(),
+        folders=my_env.get_pic_folders()
     )
     return render_template("node_list.html", **params)
 
@@ -105,7 +105,8 @@ def node(id):
     params = dict(
         node=node_obj,
         breadcrumb=bc,
-        searchForm=Search()
+        searchForm=Search(),
+        folders=my_env.get_pic_folders()
     )
     ds.History.add(id)
     return render_template('node.html', **params)
@@ -140,9 +141,13 @@ def post_add(node_id=None, book_id=None):
                 form.body.data = node.content.body
                 form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
                 form.planten.data = ds.get_terms_for_node("Planten", node_id)
-                if node.type == "flickr":
+                if node.type == "photo":
+                    # Todo: Configure Add Photo
+                    pass
+                    """
                     form.photo.data = node.flickr.photo_id
                     form.node_date.data = False
+                    """
         try:
             if book_id or (node.type == "book"):
                 del form.photo
@@ -165,7 +170,7 @@ def post_add(node_id=None, book_id=None):
         if book_id:
             node_type = "book"
         elif form.photo.data:
-            node_type = "flickr"
+            node_type = "photo"
         else:
             node_type = "blog"
         params = dict(type=node_type)
@@ -179,18 +184,18 @@ def post_add(node_id=None, book_id=None):
         params = dict(node_id=node_id, title=title, body=body)
         Content.update(**params)
         ds.update_taxonomy_for_node(node_id, plaats+planten)
-        if node_type == "flickr":
+        if node_type == "photo":
             params = dict(
                 node_id=node_id,
                 photo_id=form.photo.data
             )
-            res = Flickr.update(**params)
+            res = Photo.update(**params)
             if date_pic:
                 Node.set_created(node_id)
         else:
-            res = Flickr.delete(node_id)
+            res = Photo.delete(node_id)
         if isinstance(res, int):
-            # OK, succesful
+            # OK, successful
             return redirect(url_for('main.node', id=node_id))
         else:
             flash(res, "error")
@@ -226,16 +231,17 @@ def post_delete(node_id):
         flash(msg, "info")
     return redirect(url_for('main.index'))
 
+
 @main.route('/post/edit/<node_id>', methods=['GET', 'POST'])
 @login_required
 def post_edit(node_id):
     """
-    This method allows to edit a post. A post can be text only (blog) or have a link to Flickr Page ID attached.
+    This method allows to edit a post. A post can be text only (blog) or have a link to Photo Page ID attached.
 
     :param node_id: Id of the node under review
-
     :return:
     """
+    # Todo: review Photo Edit page
     # If node is book, then get the parent_id
     node_inst = Node.query.filter_by(id=node_id).one()
     if node_inst.type == "book":
@@ -248,7 +254,7 @@ def post_edit(node_id):
 @main.route('/taxonomy/<id>/<page>')
 @login_required
 def taxonomy(id, page=1):
-    items_per_page = current_app.config.get("ITEMS_PER_PAGE")
+    items_per_page = current_app.config["ITEMS_PER_PAGE"]
     term = Term.query.filter_by(id=id).one()
     start = (int(page)-1) * items_per_page
     end = int(page) * items_per_page
@@ -261,7 +267,8 @@ def taxonomy(id, page=1):
         nodes=sel_nodes[start:end],
         page=page,
         max_page=max_page,
-        searchForm=Search()
+        searchForm=Search(),
+        folders=my_env.get_pic_folders()
     )
     return render_template("node_list.html", **params)
 
@@ -270,11 +277,11 @@ def taxonomy(id, page=1):
 @main.route('/taxpics/<id>/<page>')
 @login_required
 def taxpics(id, page=1):
-    pics_per_page = current_app.config.get("PICS_PER_PAGE")
+    pics_per_page = current_app.config["PICS_PER_PAGE"]
     term = Term.query.filter_by(id=id).one()
     start = (int(page)-1) * pics_per_page
     end = int(page) * pics_per_page
-    nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
+    nodes = [node for node in term.nodes if (node.type == "photo" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
     max_page = ((len(sel_nodes)-1) // pics_per_page) + 1
     params = dict(
@@ -283,7 +290,8 @@ def taxpics(id, page=1):
         nodes=sel_nodes[start:end],
         page=page,
         max_page = max_page,
-        searchForm=Search()
+        searchForm=Search(),
+        folders=my_env.get_pic_folders()
     )
     return render_template("taxpics.html", **params)
 
@@ -295,7 +303,7 @@ def timeline(term_id, datestamp):
     node = Node.query.filter_by(created=datestamp).one()
     # Then find term and get node pictures related to the term and in reverse created order (youngest first)
     term = Term.query.filter_by(id=term_id).one()
-    nodes = [node for node in term.nodes if (node.type == "flickr" or node.type == "lophoto")]
+    nodes = [node for node in term.nodes if (node.type == "photo" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
     # Find index of the requested node
     pos = sel_nodes.index(node)
@@ -303,7 +311,8 @@ def timeline(term_id, datestamp):
         term_id=term_id,
         title=term.name,
         node=node,
-        searchForm=Search()
+        searchForm=Search(),
+        folders=my_env.get_pic_folders()
     )
     if pos > 0:
         params["prev_node"] = sel_nodes[pos-1]
@@ -311,23 +320,6 @@ def timeline(term_id, datestamp):
         params["next_node"] = sel_nodes[pos+1]
     return render_template("timeline.html", **params)
 
-@main.route("/tools/fd")
-@main.route("/tools/fd/<nid>")
-@login_required
-def tools_fd(nid=None):
-    """"
-    This method will find Nodes type flickr that do not have a flickr detail attached to it.
-    This is causing an application crash.
-    """
-    if nid:
-        flash("Remove Node id {nid}".format(nid=nid), "warning")
-        Node.query.filter_by(id=nid).delete()
-    nodes = Node.query.filter(Node.type == "flickr", Node.flickr == None).all()
-    params = dict(nodes=nodes,
-                  title="Nodes with No Flickr Details",
-                  nextfun="main.tools_fd",
-                  searchForm=Search())
-    return render_template("node_issues.html", **params)
 
 @main.route("/tuinplan")
 @login_required

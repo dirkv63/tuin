@@ -21,5 +21,5 @@ a:visited 		{ color: #800080; }
 .childrenlist   { list-style: none }
 .lophoto        { max-height: 600px; width=auto }
 .smallphoto     { max-height: 200px; width=auto }
-.square         { width: 140px; height: 140px; object-fit: fill }
+.square         { width: 140px; height: 140px; object-fit: cover }
 .matrix         { padding: 150px; }

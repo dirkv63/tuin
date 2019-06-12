@@ -5,7 +5,7 @@ This procedure will test the classes of the models_graph.
 import unittest
 
 from tuin import create_app
-from tuin.db_model import *
+from tuin.lib.db_model import *
 
 
 # @unittest.skip("Focus on Coverage")

@@ -1,5 +1,5 @@
 # import os
-from config import config
+from config import Config
 from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
@@ -12,23 +12,22 @@ lm = LoginManager()
 lm.login_view = 'main.login'
 
 
-def create_app(config_name):
+def create_app(config_class=Config):
     """
     Create an application instance.
 
-    :param config_name: development, test or production
+    :param config_class: Pointer to the config class.
     :return: the configured application object.
     """
 
     app = Flask(__name__)
 
     # import configuration
-    app.config.from_object(config[config_name])
-    config[config_name].init_app(app)
+    app.config.from_object(config_class)
 
     # Configure Logger, except for Test
-    if config_name.lower() != "testing":
-        hdl = my_env.get_loghandler(__name__, app.config.get('LOGDIR'), app.config.get('LOGLEVEL'))
+    if not app.testing:
+        hdl = my_env.init_loghandler(__name__)
         app.logger.addHandler(hdl)
 
     app.logger.info("Start Application")
@@ -51,17 +50,4 @@ def create_app(config_name):
     app.jinja_env.filters['terms_sorted'] = my_env.terms_sorted
     app.jinja_env.filters['monthdisp'] = my_env.monthdisp
 
-    # configure production logging of errors
-    """
-    try:
-        app.config['PRODUCTION']
-    except KeyError:
-        # Running in Dev or Test, OK
-        pass
-    else:
-        from logging.handlers import SMTPHandler
-        mail_handler = SMTPHandler('127.0.0.1', 'dirk@vermeylen.net', app.config['ADMINS'], 'Application Error')
-        mail_handler.setLevel(logging.ERROR)
-        app.logger.addHandler(mail_handler)
-    """
     return app

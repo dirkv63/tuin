@@ -16,6 +16,7 @@ import time
 from calendar import timegm
 from datetime import datetime
 from dotenv import load_dotenv
+from flask import current_app
 
 
 def init_env(projectname, filename):
@@ -127,6 +128,20 @@ def date2epoch(ds):
     """
     utc_time = time.strptime(ds, "%Y-%m-%d %H:%M:%S")
     return timegm(utc_time)
+
+
+def get_pic_folders():
+    """
+    This function returns the picture folder structure in a dictionary.
+
+    :return: Dictionary keys: public, original, small, medium, source
+    """
+    pic_folders = dict(public=current_app.config["PUBLIC_FOLDER"],
+                       source=current_app.config["SOURCE_FOLDER"],
+                       original=current_app.config["ORIGINAL_FOLDER"],
+                       medium=current_app.config["MEDIUM_FOLDER"],
+                       small=current_app.config["SMALL_FOLDER"])
+    return pic_folders
 
 
 def reformat_body(string, is_xhtml=True):

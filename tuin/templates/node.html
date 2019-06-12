@@ -16,9 +16,10 @@
         {% if node.terms|length > 0 %}
             {{ macros.taxonomy(node.terms|terms_sorted) }}
         {% endif %}
-        {% if node.type == "flickr" %}
-            <a target="_blank" href="{{node.flickr.flickrdetails.flickr_url}}">
-                <img src="{{node.flickr.flickrdetails.url_c}}" class="img-responsive lophoto">
+        {% if node.type == "photo" %}
+            <a target="_blank" href="{{ folders['public'] }}{{ folders['original'] }}{{ node.photo.filename }}">
+                <img src="{{ folders['public'] }}{{ folders['medium'] }}{{ node.photo.filename }}"
+                     class="img-responsive lophoto">
             </a>
         {% elif node.type == "lophoto" %}
             <img src="{{ url_for('static', filename=node.lophoto.filename) }}" class="img-responsive lophoto">
