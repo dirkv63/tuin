@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+from flask import current_app
 
 
 class PcloudHandler:
@@ -34,6 +35,24 @@ class PcloudHandler:
         pct = (usedquota/quota)*100
         msg = "{pct:.2f}% used.".format(pct=pct)
         logging.info(msg)
+
+    def close_connection(self):
+        """
+        Logout from pcloud and close connection.
+
+        :return:
+        """
+        headers = dict(Connection='close')
+        method = "logout"
+        url = self.url_base + method
+        r = self.session.get(url, headers=headers)
+        if r.status_code != 200:
+            msg = "Could not close connection. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
+            logging.critical(msg)
+            raise SystemExit(msg)
+        # Status Code OK, so connection close successful.
+        res = r.json()
+        return res
 
     def close_file(self, file_desc):
         """
@@ -74,16 +93,18 @@ class PcloudHandler:
         res = r.json()
         return res
 
-    def folder_contents(self, folderid):
+    def folder_contents(self, folderid=None, foldername=None):
         """
         This method gets a pcloud folder ID and returns a dictionary with sub-directory contents and a dictionary with
         file contents
-        :param folderid:
+
+        :param folderid: ID of the folder (preferred)
+        :param foldername: Name of the folder.
         :return: subdirectory contents, files contents
         """
         subdirs = {}
         files = {}
-        res = self.listfolder(folderid)
+        res = self.listfolder(folderid, foldername)
         contents = res["metadata"]["contents"]
         for content in contents:
             name = content["name"]
@@ -130,15 +151,31 @@ class PcloudHandler:
         res = r.json()
         return res
 
-    def listfolder(self, folderid):
+    def get_public_cloud_id(self):
+        """
+        This method returns the ID of the public folder.
+
+        :return: ID of the public folder.
+        """
+        subdirs, _ = self.folder_contents(foldername="/")
+        return subdirs["Public Folder"]["folderid"]
+
+    def listfolder(self, folderid=None, foldername=None):
         """
         This method will get a folder ID and return json string with folder information.
 
-        :param folderid: ID of the folder for which the info is required
+        :param folderid: ID of the folder for which the info is required (int)
+        :param foldername: Name of the folder (string).
         :return:
         """
         # Todo: merge method with get_contents method.
-        params = dict(folderid=folderid)
+        if folderid:
+            params = dict(folderid=folderid)
+        elif foldername:
+            params = dict(path=foldername)
+        else:
+            current_app.logger.error("Listfolder called without specifying foldername or ID")
+            return
         method = "listfolder"
         url = self.url_base + method
         r = self.session.get(url, params=params)
@@ -151,6 +188,11 @@ class PcloudHandler:
         return res
 
     def logout(self):
+        """
+        Logout from pcloud, but keep session.
+
+        :return:
+        """
         method = "logout"
         url = self.url_base + method
         params = dict(auth=self.auth)
@@ -165,6 +207,27 @@ class PcloudHandler:
             else:
                 msg = "Logout not successful, status code: {status}".format(status=r.status_code)
             logging.info(msg)
+
+    def movefile(self, fileid, tofolderid, filename):
+        """
+        This method copies a file to a destination folder.
+
+        :param fileid: ID of the file to be copied.
+        :param tofolderid: Target folder.
+        :param filename: Target file name.
+        :return:
+        """
+        params = dict(fileid=fileid, tofolderid=tofolderid, toname=filename)
+        method = "renamefile"
+        url = self.url_base + method
+        r = self.session.get(url, params=params)
+        if r.status_code != 200:
+            msg = "Could not move file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
+            logging.critical(msg)
+            raise SystemExit(msg)
+        # Status Code OK, so successful login
+        res = r.json()
+        return res
 
     def read_file(self, file_desc, size):
         """

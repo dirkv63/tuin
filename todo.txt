@@ -1,4 +1,3 @@
-Todo 1. Review files in template directory that have not been touched
 Todo 2. Review routes.py script on anything
 Todo 4. Script to convert all pictures from flickr - remember not to convert pictures more than once.
 Todo 3. Add / Edit photo nodes
