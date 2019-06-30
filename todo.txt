@@ -1,4 +1,5 @@
 Todo 2. Review routes.py script on anything
 Todo 4. Script to convert all pictures from flickr - remember not to convert pictures more than once.
 Todo 3. Add / Edit photo nodes
+Todo x. "Actie" section processed in flask start-up.
 Todo 50. Move pictures from lophoto to photo. Check on duplicates.

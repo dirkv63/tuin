@@ -38,8 +38,7 @@ class Content(db.Model):
         """
         This method will add or edit the node title or body.
 
-        :param params: Dictionary with node_id, title and body as keys.
-
+        :param params: Dictionary with node_id, title and body as fields.
         :return:
         """
         try:
@@ -68,13 +67,23 @@ class Lophoto(db.Model):
 
 class Photo(db.Model):
     """
-    Table containing information about the pictures on pcloud.
+    Table containing information about the pictures on pcloud. A picture can be used by a single node only.
     """
     __tablename__ = "photo"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     node_id = db.Column(db.Integer, db.ForeignKey('node.id'))
     filename = db.Column(db.Text, nullable=False)
-    # created = db.Column(db.Integer, nullable=False)
+    orig_filename = db.Column(db.Text)
+    created = db.Column(db.Integer, nullable=False)
+    fresh = db.Column(db.Integer)
+
+    @staticmethod
+    def add(**params):
+        photo_inst = Photo(**params)
+        db.session.add(photo_inst)
+        db.session.commit()
+        db.session.refresh(photo_inst)
+        return photo_inst.id
 
     @staticmethod
     def delete(node_id):
@@ -98,6 +107,35 @@ class Photo(db.Model):
             db.session.delete(photo_inst)
             db.session.commit()
         return 1
+
+    @staticmethod
+    def edit(**params):
+        """
+        This method will edit the photo record, based on the Node ID. Attributes in params are set, attributes not in
+        params are left untouched.
+
+        :param params: Dictionary with node_id as identifying record.
+        :return:
+        """
+        photo_inst = db.session.query(Photo).filter_by(node_id=params['node_id']).first()
+        for k, v in params.items():
+            setattr(photo_inst, k, v)
+        db.session.commit()
+        return
+
+    @staticmethod
+    def get_node_id(filename):
+        """
+        This method returns the node_id for the Photo record for picture filename, or None if the filename is not found.
+
+        :param filename: Filename for which node_id needs to be returned.
+        :return: node_id - or None if node_id is not found.
+        """
+        photo_inst = db.session.query(Photo).filter_by(filename=filename).first()
+        if photo_inst:
+            return photo_inst.node_id
+        else:
+            return None
 
 
 class Node(db.Model):
@@ -134,17 +172,17 @@ class Node(db.Model):
         return node_inst.id
 
     @staticmethod
-    def edit(**params):
+    def edit(node_id):
         """
-        This method will edit the node title or body.
+        This method will edit the node by updating modified timestamp and revision count.
 
-        :param params: Dictionary with title and body as keys.
+        :param node_id: ID of the node to be modified.
         :return:
         """
-        node_inst = db.session.query(Node).filter_by(id=params['id']).first()
+        node_inst = db.session.query(Node).filter_by(id=node_id).first()
         node_inst.modified = int(time.time())
         node_inst.revcnt += 1
-        setattr(node_inst, "type", params["type"])
+        node_inst.photo.fresh = 0
         db.session.commit()
         return
 
@@ -154,7 +192,6 @@ class Node(db.Model):
         This method will update the parent for the node. params needs to have nid and parent_id as keys.
 
         :param params: Dictionary with nid and parent_id as keys.
-
         :return:
         """
         node_inst = db.session.query(Node).filter_by(nid=params['nid']).first()
@@ -186,13 +223,10 @@ class Node(db.Model):
         # Set node created date to Create Date picture
         node_inst = Node.query.filter_by(id=nid).one()
         nc = node_inst.created
-        # Todo Collect date created from picture.
-        """
-        fd = node_inst.flickr.flickrdetails.datetaken
+        created = node_inst.photo.created
         current_app.logger.info("Node created datestamp from {nc} to {fd}".format(nc=datestamp(nc),
-                                                                                  fd=datestamp(fd)))
-        node_inst.created = fd
-        """
+                                                                                  fd=created))
+        node_inst.created = created
         db.session.commit()
         return
 
@@ -336,6 +370,15 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+def count_nf():
+    """
+    Function to return the count of the "Nieuwe Foto's".
+
+    :return:
+    """
+    return Photo.query.filter_by(fresh=1).count()
+
+
 def get_archive():
     """
     This function will collect the articles by month. SQL query:
@@ -417,6 +460,20 @@ def get_nodes_for_month(ym):
     return query.all()
 
 
+def get_oldest_nf():
+    """
+    Function to return the oldest 'Nieuwe Foto' for processing.
+
+    :return:
+    """
+    photo_inst = Photo.query.filter_by(fresh=1).order_by(Photo.created.asc()).first()
+    if photo_inst:
+        return photo_inst.node_id
+    else:
+        current_app.logger.warning("Get Oldest called, but no 'Nieuwe Foto' found.")
+        return None
+
+
 def get_pics():
     """
     This method will get the picture URLs for the page specified.
@@ -479,14 +536,13 @@ def get_title(title, planten):
     title) is returned as title.
 
     :param title: Current setting for the title
-
     :param planten: List of planten selected for the post.
-
     :return: title, list of planten or (Geen Titel).
     """
     if title:
-        return title
-    elif len(planten) > 0:
+        if not title == "Nieuwe Foto":
+            return title
+    if len(planten) > 0:
         # Convert term.id to term.name
         query = Term.query.filter(Term.id.in_(planten))
         current_app.logger.warning(query)

@@ -16,6 +16,12 @@
 {% block page_content %}
 <div class="row">
     {{ macros.bc(breadcrumb) }}
+    {% if node is defined }
+        {% if node.type == "photo" %}
+            <img src="{{ folders['public'] }}{{ folders['medium'] }}{{ node.photo.filename }}"
+                 class="img-responsive lophoto">
+        {% endif %}
+    {% endif %}
     {{ wtf.quick_form(form) }}
 </div>
 {% endblock %}

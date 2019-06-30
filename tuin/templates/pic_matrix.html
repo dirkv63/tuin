@@ -51,6 +51,11 @@
                 <a href="{{ url_for('main.post_add') }}" class="btn btn-default" role="button">
                     Nieuw Bericht
                 </a>
+                {% if nfc > 0 %}
+                    <a href="{{ url_for('main.editpictures') }}" class="btn btn-default" role="button">
+                        Nieuwe Foto's ({{ nfc }})
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -37,9 +37,9 @@ class PwdUpdate(Form):
 
 class TextAdd(Form):
     title = StringField('Titel')
-    photo = StringField('Foto ID')
-    node_date = BooleanField(u"Gebruik datum van foto", description=u"Gebruik datum van de foto voor 'Node Create'",
-                             default=True)
+    # photo = StringField('Foto ID')
+    # node_date = BooleanField(u"Gebruik datum van foto", description=u"Gebruik datum van de foto voor 'Node Create'",
+    #                          default=True)
     body = CKTextAreaField('Beschrijving')
     plaats = SelectMultipleField('Plaats: ', coerce=str)
     planten = SelectMultipleField('Planten', coerce=str)

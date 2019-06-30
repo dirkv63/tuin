@@ -17,6 +17,12 @@
 <h1>{{ hdr }}</h1>
 <div class="row">
     <div class="col-md-9">
+        {% if node is defined %}
+            {% if node.type == "photo" %}
+                <img src="{{ folders['public'] }}{{ folders['medium'] }}{{ node.photo.filename }}"
+                     class="img-responsive lophoto">
+            {% endif %}
+        {% endif %}
         {{ wtf.quick_form(form, form_type="basic") }}
     </div>
     <div class="col-md-3 text-center">
@@ -31,6 +37,12 @@
                 <a href="{{ url_for('main.post_add') }}" class="btn btn-default" role="button">
                     Nieuw Bericht
                 </a>
+                {% if nfc > 0 %}
+                    <a href="{{ url_for('main.editpictures') }}" class="btn btn-default" role="button">
+                        Nieuwe Foto's ({{ nfc }})
+                    </a>
+                {% endif %}
+
             </div>
         </div>
     </div>

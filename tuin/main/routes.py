@@ -1,4 +1,3 @@
-import os
 import tuin.lib.db_model as ds
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, login_user, logout_user, current_user
@@ -6,6 +5,7 @@ from .forms import *
 from . import main
 from tuin.lib.db_model import *
 from tuin.lib import my_env
+from tuin.lib import photo_handler
 
 
 @main.route('/login', methods=['GET', 'POST'])
@@ -53,7 +53,8 @@ def index(page=1):
         searchForm=Search(),
         title="Overzicht",
         page=page,
-        folders=my_env.get_pic_folders()
+        folders=my_env.get_pic_folders(),
+        nfc=ds.count_nf()
     )
     return render_template("pic_matrix.html", **params)
 
@@ -68,7 +69,7 @@ def archive(page=1):
     end = int(page) * items_per_page
     max_page = ((len(archlist)-1) // items_per_page) + 1
     params = dict(
-        archlist = archlist[start:end],
+        archlist=archlist[start:end],
         searchForm=Search(),
         page=page,
         max_page=max_page
@@ -106,10 +107,40 @@ def node(id):
         node=node_obj,
         breadcrumb=bc,
         searchForm=Search(),
-        folders=my_env.get_pic_folders()
+        folders=my_env.get_pic_folders(),
+        nfc=ds.count_nf()
     )
     ds.History.add(id)
     return render_template('node.html', **params)
+
+
+@main.route('/loadpictures')
+@login_required
+def loadpictures():
+    """
+    Method to load Pictures (if available) as fresh nodes.
+
+    :return:
+    """
+    nr_files = photo_handler.photo_handler()
+    flash("{} foto's geladen.".format(nr_files), "info")
+    return redirect(url_for('main.index'))
+
+
+@main.route('/editpictures')
+@login_required
+def editpictures():
+    """
+    Method to find the oldest 'Nieuwe Foto' and present it for editing.
+
+    :return:
+    """
+    nid = ds.get_oldest_nf()
+    if isinstance(nid, int):
+        return redirect(url_for('main.post_edit', node_id=nid))
+    else:
+        flash("Geen nieuwe foto's gevonden", "warning")
+        return redirect(url_for('main.index'))
 
 
 @main.route('/post/add', methods=['GET', 'POST'])
@@ -117,7 +148,7 @@ def node(id):
 @login_required
 def post_add(node_id=None, book_id=None):
     """
-    This method allows to add or edit a blog text. A blog text is only text, no picture attached to it.
+    This method allows to add or edit a node. A blog text can be added or edited. A photo can be edited only.
 
     :param node_id: ID of the node for edit, or None for add
     :param book_id: ID of the parent page for which the page needs to be added.
@@ -127,84 +158,51 @@ def post_add(node_id=None, book_id=None):
     form.plaats.choices = ds.get_terms("Plaats")
     form.planten.choices = ds.get_terms("Planten")
     if request.method == "GET":
+        temp_attribs = {}
         hdr = "Nieuw Bericht"
         if node_id:
+            # Edit existing node
             try:
-                node = Node.query.filter_by(id=node_id).one()
+                node_inst = Node.query.filter_by(id=node_id).one()
             except NoResultFound:
                 msg = "Trying to edit Node ID {nid}, but node not found".format(nid=node_id)
                 current_app.logger.error(msg)
                 flash(msg, "error")
             else:
-                hdr = "Aanpassen {t}".format(t=node.content.title)
-                form.title.data = node.content.title
-                form.body.data = node.content.body
+                hdr = "Aanpassen {t}".format(t=node_inst.content.title)
+                form.title.data = node_inst.content.title
+                form.body.data = node_inst.content.body
                 form.plaats.data = ds.get_terms_for_node("Plaats", node_id)
                 form.planten.data = ds.get_terms_for_node("Planten", node_id)
-                if node.type == "photo":
-                    # Todo: Configure Add Photo
-                    pass
-                    """
-                    form.photo.data = node.flickr.photo_id
-                    form.node_date.data = False
-                    """
-        try:
-            if book_id or (node.type == "book"):
-                del form.photo
-        except UnboundLocalError:
-            pass
-        temp_attribs = dict(
-            hdr=hdr,
-            form=form,
-            searchForm=Search()
-        )
+                temp_attribs["node"] = node_inst
+                temp_attribs["folders"] = my_env.get_pic_folders()
+        temp_attribs["hdr"] = hdr
+        temp_attribs["form"] = form
+        temp_attribs["searchForm"] = Search()
+        temp_attribs["nfc"] = ds.count_nf()
         return render_template('form.html', **temp_attribs)
     else:
-        title = form.title.data
+        # POST - process node information.
+        temp_title = form.title.data
         body = form.body.data
         plaats = form.plaats.data
         planten = form.planten.data
-        date_pic = form.node_date.data
-        title = ds.get_title(title, planten)
-        # Todo - check if test on form.photo.data is sufficient, then remove length
+        title = ds.get_title(temp_title, planten)
+        # Add - book or blog, Edit: book, blog, photo.
+        params = {}
         if book_id:
-            node_type = "book"
-        elif form.photo.data:
-            node_type = "photo"
-        else:
-            node_type = "blog"
-        params = dict(type=node_type)
-        if node_type == "book":
             params["parent_id"] = book_id
+            params["type"] = "book"
+        elif not node_id:
+            params["type"] = "blog"
         if node_id:
-            params["id"] = node_id
-            Node.edit(**params)
+            Node.edit(node_id)
         else:
             node_id = Node.add(**params)
         params = dict(node_id=node_id, title=title, body=body)
         Content.update(**params)
         ds.update_taxonomy_for_node(node_id, plaats+planten)
-        if node_type == "photo":
-            params = dict(
-                node_id=node_id,
-                photo_id=form.photo.data
-            )
-            res = Photo.update(**params)
-            if date_pic:
-                Node.set_created(node_id)
-        else:
-            res = Photo.delete(node_id)
-        if isinstance(res, int):
-            # OK, successful
-            return redirect(url_for('main.node', id=node_id))
-        else:
-            flash(res, "error")
-            temp_attribs = dict(
-                hdr="Aanpassing nodig",
-                form=form,
-                searchForm=Search()
-            )
-            return render_template('form.html', **temp_attribs)
+        return redirect(url_for('main.node', id=node_id))
 
 
 @main.route('/post/delete/<node_id>', methods=['GET', 'POST'])
@@ -236,12 +234,12 @@ def post_delete(node_id):
 @login_required
 def post_edit(node_id):
     """
-    This method allows to edit a post. A post can be text only (blog) or have a link to Photo Page ID attached.
+    This method allows to edit a post. A post can be text only (blog) or have a link to Photo Page ID attached. Edit
+    method is only  required to add book.parent_id. For photo and blog, the post_add could be called.
 
     :param node_id: Id of the node under review
     :return:
     """
-    # Todo: review Photo Edit page
     # If node is book, then get the parent_id
     node_inst = Node.query.filter_by(id=node_id).one()
     if node_inst.type == "book":
@@ -289,7 +287,7 @@ def taxpics(id, page=1):
         title=term.name,
         nodes=sel_nodes[start:end],
         page=page,
-        max_page = max_page,
+        max_page=max_page,
         searchForm=Search(),
         folders=my_env.get_pic_folders()
     )
@@ -327,6 +325,7 @@ def tuinplan():
     node_inst = Node.query.filter_by(id=904).one()
     body = node_inst.content.body
     return render_template("geschaaldplan.html", body=body)
+
 
 @main.route('/vocabulary/<id>/<target>')
 @login_required
