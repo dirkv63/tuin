@@ -258,8 +258,6 @@ class PcloudHandler:
         :param folderid: pcloud target folderid.
         :return:
         """
-        print(file)
-        print(ffn)
         files = {file: open(ffn, 'rb')}
         params = dict(folderid=folderid)
         method = "uploadfile"
