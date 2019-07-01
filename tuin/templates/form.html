@@ -42,7 +42,39 @@
                         Nieuwe Foto's ({{ nfc }})
                     </a>
                 {% endif %}
-
+                {% if node.type != "lophoto" %}
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#myModal">
+                    Bericht Verwijderen
+                </button>
+                <!-- Modal code -->
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+                     aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                                    &times;
+                                </button>
+                                <h3 class="modal-title">Bevestig Bericht Verwijderen</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>OK om bericht <strong>{{ node.content.title }}</strong> te verwijderen?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="{{ url_for('main.post_delete', node_id=node.id) }}" class="btn btn-danger"
+                                   role="button">
+                                    Delete
+                                </a>
+                                <a href="{{ url_for('main.node', id=node.id) }}" class="btn btn-warning"
+                                   role="button">
+                                    Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -212,7 +212,6 @@ def post_delete(node_id):
     This method allows to delete a post.
 
     :param node_id: ID of the node for removal
-
     :return:
     """
     try:
