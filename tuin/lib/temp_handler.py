@@ -220,7 +220,7 @@ def photo_handler():
     :return:
     """
     # Get directory names
-    source_dirname = current_app.config.get("SOURCE_FOLDER")
+    # source_dirname = current_app.config.get("SOURCE_FOLDER")
     original_dirname = current_app.config["ORIGINAL_FOLDER"]
     medium_dirname = current_app.config["MEDIUM_FOLDER"]
     small_dirname = current_app.config["SMALL_FOLDER"]
@@ -230,21 +230,22 @@ def photo_handler():
     # Get folders from Public Folder
     subdirs, _ = pcloud.folder_contents(public_cloud_id)
     # Directory names to folder IDs - remove trailing slashes from directory names
-    if source_dirname:
-        source_folderid = subdirs[source_dirname[:-1]]["folderid"]
-    else:
-        source_folderid = public_cloud_id
     original_folderid = subdirs[original_dirname[:-1]]["folderid"]
     medium_folderid = subdirs[medium_dirname[:-1]]["folderid"]
     small_folderid = subdirs[small_dirname[:-1]]["folderid"]
     # Collect files from source directory
-    _, files = pcloud.folder_contents(source_folderid)
+    _, files = pcloud.folder_contents(original_folderid)
+    _, done_files = pcloud.folder_contents(small_folderid)
+    done_filenames = done_files.keys()
+    print(done_filenames)
+    print(type(done_filenames))
     # Only handle accepted file types
     accepted_types = [".JPG", ".jpg"]
     files = [files[file] for file in files if Path(file).suffix in accepted_types]
+    files = [file for file in files if file["name"] not in done_filenames]
+    current_app.logger.info("{} files ready for processing".format(len(files)))
     for filedata in files:
         file = filedata["name"]
-        fileid = filedata["fileid"]
         # Get file contents and convert to an image - also required to get exif for date and time of picture taken.
         content = pcloud.get_content(filedata)
         current_app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
@@ -253,12 +254,7 @@ def photo_handler():
         img = parser.close()
         # Get exif information from picture
         exif = get_labeled_exif(file, img)
-        # Calculate new filename including date/time picture taken
-        created_dt = get_created_datetime(filedata, exif)
-        fn = get_filename(file, created_dt)
-        create_node(fn, file, created_dt)
-        # Move file to Original directory
-        pcloud.movefile(fileid, original_folderid, fn)
+        fn = file
         # Create medium image
         medium_img = to_medium(img)
         if isinstance(exif, dict):
