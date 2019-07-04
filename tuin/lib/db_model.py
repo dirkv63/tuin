@@ -420,6 +420,21 @@ def get_breadcrumb(nid, bc=None):
         return get_breadcrumb(parent.id, bc)
 
 
+def get_file_from_nid(nid):
+    """
+    This method returns the filename associated with the node ID.
+
+    :param nid: Node ID for which the filename is required.
+    :return: Filename associated with Node ID.
+    """
+    node_inst = Node.query.filter_by(id=nid).first()
+    if node_inst:
+        return node_inst.photo.filename
+    else:
+        current_app.logger.warning("Filename for node id {} requested but not found".format(nid))
+        return None
+
+
 def get_node_attribs(nid):
     """
     This method will collect the attributes required to display a node.

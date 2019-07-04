@@ -247,6 +247,20 @@ def post_edit(node_id):
         return post_add(node_id=node_id)
 
 
+@main.route('/reloadpicture/<nid>')
+@login_required
+def reloadpicture(nid):
+    """
+    Method to reload medium and small image of a picture.
+
+    :param nid: Node ID for the picture to be reloaded.
+    :return:
+    """
+    filename = photo_handler.single_photo_handler(nid)
+    flash("{} is opnieuw geladen".format(filename))
+    return redirect(url_for('main.node', id=nid))
+    
+
 @main.route('/taxonomy/<id>')
 @main.route('/taxonomy/<id>/<page>')
 @login_required

@@ -38,9 +38,9 @@
                     Nieuw Bericht
                 </a>
                 {% if nfc > 0 %}
-                    <a href="{{ url_for('main.editpictures') }}" class="btn btn-default" role="button">
-                        Nieuwe Foto's ({{ nfc }})
-                    </a>
+                <a href="{{ url_for('main.editpictures') }}" class="btn btn-default" role="button">
+                    Nieuwe Foto's ({{ nfc }})
+                </a>
                 {% endif %}
                 {% if node.type != "lophoto" %}
                 <!-- Button trigger modal -->
@@ -75,6 +75,9 @@
                     </div>
                 </div>
                 {% endif %}
+                <a href="{{ url_for('main.reloadpicture', nid=node.id) }}" class="btn btn-default" role="button">
+                    Foto herladen
+                </a>
             </div>
         </div>
     </div>

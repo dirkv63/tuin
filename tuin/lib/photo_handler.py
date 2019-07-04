@@ -4,6 +4,7 @@ small version of the picture. The picture is added as a 'photo' node to the data
 picture.
 """
 import os
+import tuin.lib.db_model as ds
 from datetime import datetime
 from dateutil import tz
 from flask import current_app
@@ -282,3 +283,57 @@ def photo_handler():
     nr_files = len(files)
     current_app.logger.info("{} pictures have been processed.".format(nr_files))
     return nr_files
+
+
+def single_photo_handler(nid):
+    """
+    This function accepts a node ID and creates the medium and small size pictures for the photo associated with this
+    node.
+
+    :param nid: Node ID for which medium and small picture need to be created.
+    :return:
+    """
+    # Get directory names
+    original_dirname = current_app.config["ORIGINAL_FOLDER"]
+    medium_dirname = current_app.config["MEDIUM_FOLDER"]
+    small_dirname = current_app.config["SMALL_FOLDER"]
+    # Connect to pcloud and get directory structure
+    pcloud = pcloud_handler.PcloudHandler()
+    public_cloud_id = pcloud.get_public_cloud_id()
+    # Get folders from Public Folder
+    subdirs, _ = pcloud.folder_contents(public_cloud_id)
+    original_folderid = subdirs[original_dirname[:-1]]["folderid"]
+    medium_folderid = subdirs[medium_dirname[:-1]]["folderid"]
+    small_folderid = subdirs[small_dirname[:-1]]["folderid"]
+    file = ds.get_file_from_nid(nid)
+    _, files = pcloud.folder_contents(original_folderid)
+    filedata = files[file]
+    # Get file contents and convert to an image - also required to get exif for date and time of picture taken.
+    content = pcloud.get_content(filedata)
+    current_app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
+    parser = ImageFile.Parser()
+    parser.feed(content)
+    img = parser.close()
+    # Get exif information from picture
+    exif = get_labeled_exif(file, img)
+    # Create medium image
+    medium_img = to_medium(img)
+    if isinstance(exif, dict):
+        try:
+            medium_img = rotate_image(medium_img, exif["Orientation"])
+        except KeyError:
+            current_app.logger.info("{} no Orientation in exif data".format(file))
+    medium_ffn = os.path.join(os.getenv('LOGDIR'), file)
+    medium_img.save(medium_ffn)
+    res = pcloud.upload_file(file, medium_ffn, medium_folderid)
+    current_app.logger.info("File {} medium format loaded, result: {}".format(file, res["result"]))
+    os.remove(medium_ffn)
+    # Create small image
+    small_img = to_small(medium_img)
+    small_ffn = os.path.join(os.getenv('LOGDIR'), file)
+    small_img.save(small_ffn)
+    res = pcloud.upload_file(file, small_ffn, small_folderid)
+    current_app.logger.info("File {} small format loaded, result: {}".format(file, res["result"]))
+    os.remove(small_ffn)
+    pcloud.close_connection()
+    return
