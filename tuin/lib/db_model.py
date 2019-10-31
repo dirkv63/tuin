@@ -182,7 +182,9 @@ class Node(db.Model):
         node_inst = db.session.query(Node).filter_by(id=node_id).first()
         node_inst.modified = int(time.time())
         node_inst.revcnt += 1
-        node_inst.photo.fresh = 0
+        # If node has a photo attached to it, set fresh to 0
+        if node_inst.photo:
+            node_inst.photo.fresh = 0
         db.session.commit()
         return
 
