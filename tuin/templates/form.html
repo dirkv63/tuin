@@ -42,7 +42,8 @@
                     Nieuwe Foto's ({{ nfc }})
                 </a>
                 {% endif %}
-                {% if node.type != "lophoto" %}
+                <!-- Remove node only if it is defined and not lophoto type -->
+                {% if node is defined and node.type != "lophoto" %}
                 <!-- Button trigger modal -->
                 <button type="button" class="btn btn-default" data-toggle="modal" data-target="#myModal">
                     Bericht Verwijderen
@@ -74,10 +75,10 @@
                         </div>
                     </div>
                 </div>
-                {% endif %}
                 <a href="{{ url_for('main.reloadpicture', nid=node.id) }}" class="btn btn-default" role="button">
                     Foto herladen
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
