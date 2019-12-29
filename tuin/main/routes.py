@@ -332,12 +332,12 @@ def timeline(term_id, datestamp):
     return render_template("timeline.html", **params)
 
 
-@main.route("/tuinplan")
+@main.route("/tuinplan/<nid>")
 @login_required
-def tuinplan():
-    node_inst = Node.query.filter_by(id=904).one()
+def tuinplan(nid):
+    node_inst = Node.query.filter_by(id=nid).one()
     body = node_inst.content.body
-    return render_template("geschaaldplan.html", body=body)
+    return render_template("tuinplan.html", body=body)
 
 
 @main.route('/vocabulary/<id>/<target>')

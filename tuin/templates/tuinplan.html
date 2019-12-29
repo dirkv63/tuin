@@ -6,7 +6,7 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 {% endblock %}
 
-{% block title %}Tuin{% endblock %}
+{% block title %}Plan{% endblock %}
 
 {% block navbar %}
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -55,13 +55,22 @@
                             <li><a href="{{ url_for('main.archive') }}">Archief</a></li>
                         </ul>
                     </li>
-                    <li>
-                        <a href="{{ url_for('main.tuinplan') }}">
+                   <li>
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                             Tuinplan
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('main.tuinplan', nid=904) }}">Tuin</a></li>
+                            <li><a href="{{ url_for('main.tuinplan', nid=2044) }}">Voortuin</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('main.loadpictures') }}">
+                            Nieuwe Foto's
                         </a>
                     </li>
-
-                 </ul>
+                  </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li>
                         {% if current_user.is_authenticated %}
@@ -80,7 +89,6 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Tuinplan</h1>
-    &nbsp;
+    <h1>Plan</h1>
     {{ body|safe }}
 {% endblock %}
