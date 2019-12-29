@@ -404,9 +404,7 @@ def get_breadcrumb(nid, bc=None):
     For adding a new node, add nid for the new parent and add bc=[current_node].
 
     :param nid:
-
     :param bc: Breadcrumb list so far
-
     :return: bc
     """
     if not bc:
@@ -453,7 +451,6 @@ def get_node_list(order="created"):
     This method will return the most recent posts.
 
     :param order: This specifies the order for the list. Options: created (default), modified
-
     :return: Query object with nodes according to sort sequence.
     """
     node_order = Node.created.desc()
@@ -468,7 +465,6 @@ def get_nodes_for_month(ym):
     This method will return the list of nodes that were created in a specific month.
 
     :param ym: Month is format YYYY-MM
-
     :return: Nodes that have been created in this month.
     """
     month_sel = db.func.datetime(Node.created, "unixepoch")
@@ -480,8 +476,6 @@ def get_nodes_for_month(ym):
 def get_oldest_nf():
     """
     Function to return the oldest 'Nieuwe Foto' for processing.
-
-    :return:
     """
     photo_inst = Photo.query.filter_by(fresh=1).order_by(Photo.created.asc()).first()
     if photo_inst:
@@ -494,8 +488,6 @@ def get_oldest_nf():
 def get_pics():
     """
     This method will get the picture URLs for the page specified.
-
-    :return:
     """
     node_order = Node.created.desc()
     nodes = Node.query.filter((Node.type == "photo") | (Node.type == "lophoto")).order_by(node_order)
@@ -507,7 +499,6 @@ def get_pics_tax(tax=1):
     This method will get the picture URLs for the page and taxonomy term specified.
 
     :param tax: Taxonomy term ID
-
     :return:
     """
     node_order = Node.created.desc()
@@ -521,7 +512,6 @@ def get_terms(voc):
     item.
 
     :param voc: Vocabulary name
-
     :return: Terms of the vocabulary in (value, label) pair.
     """
     voc = Vocabulary.query.filter_by(name=voc).one()
@@ -534,9 +524,7 @@ def get_terms_for_node(voc, node_id):
     This method will return the selected terms for a vocabulary for a specific node.
 
     :param voc: Vocabulary name
-
     :param node_id: ID of the node.
-
     :return: List of term IDs
     """
     voc = Vocabulary.query.filter_by(name=voc).one()
@@ -600,7 +588,6 @@ def get_voc_name(nid):
     This method will return the vocabulary name for this ID.
 
     :param nid: ID of the vocabulary
-
     :return: Name of the vocabulary (Plaats or Planten)
     """
     voc = Vocabulary.query.filter_by(id=nid)
@@ -610,6 +597,7 @@ def get_voc_name(nid):
 def search_term(term):
     """
     Trying to work from https://www.sqlite.org/fts5.html
+
     :param term:
     :return:
     """
@@ -644,9 +632,7 @@ def update_taxonomy_for_node(nid, req_terms=None):
     delete the terms array needs to be empty.
 
     :param nid: Node Id
-
     :param req_terms: List of taxonomy term IDs that apply to the node Id
-
     :return:
     """
     if req_terms:
