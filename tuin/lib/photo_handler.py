@@ -7,13 +7,17 @@ import os
 import tuin.lib.db_model as ds
 from datetime import datetime
 from dateutil import tz
-from flask import current_app
+# from flask import current_app
 from pathlib import Path
+from tuin import create_app
 from tuin.lib import pcloud_handler
 from tuin.lib.db_model import Node, Photo, Content
 from PIL import ImageFile
 from PIL.ExifTags import TAGS
 from PIL.Image import LANCZOS
+
+app = create_app()
+app.app_context().push()
 
 
 def create_node(filename, orig, created_dt):
@@ -29,7 +33,7 @@ def create_node(filename, orig, created_dt):
     # Check if photo already exist.
     node_id = Photo.get_node_id(filename)
     if node_id:
-        current_app.logger.warning("Photo {} from file {} exists already, refreshed.".format(filename, orig))
+        app.logger.warning("Photo {} from file {} exists already, refreshed.".format(filename, orig))
         params = dict(
             node_id=node_id,
             filename=filename,
@@ -40,7 +44,7 @@ def create_node(filename, orig, created_dt):
         Photo.edit(**params)
     else:
         # New photo, create Node record.
-        current_app.logger.info("Photo {} from file {} created.".format(filename, orig))
+        app.logger.info("Photo {} from file {} created.".format(filename, orig))
         params = dict(
             type='photo',
         )
@@ -111,7 +115,7 @@ def get_labeled_exif(file, image):
     try:
         return {TAGS[k]: v for k, v in image._getexif().items() if k in TAGS}
     except AttributeError:
-        current_app.logger.warning("No EXIF info attached in {}...".format(file))
+        app.logger.warning("No EXIF info attached in {}...".format(file))
         return None
 
 
@@ -132,7 +136,7 @@ def rotate_image(image, orientation):
     elif orientation == 3:
         angle = 180
     else:
-        current_app.logger.error("Unexpected orientation: {}".format(orientation))
+        app.logger.error("Unexpected orientation: {}".format(orientation))
         return image
     return image.rotate(angle, expand=True)
 
@@ -221,10 +225,10 @@ def photo_handler():
     :return:
     """
     # Get directory names
-    source_dirname = current_app.config.get("SOURCE_FOLDER")
-    original_dirname = current_app.config["ORIGINAL_FOLDER"]
-    medium_dirname = current_app.config["MEDIUM_FOLDER"]
-    small_dirname = current_app.config["SMALL_FOLDER"]
+    source_dirname = app.config.get("SOURCE_FOLDER")
+    original_dirname = app.config["ORIGINAL_FOLDER"]
+    medium_dirname = app.config["MEDIUM_FOLDER"]
+    small_dirname = app.config["SMALL_FOLDER"]
     # Connect to pcloud and get directory structure
     pcloud = pcloud_handler.PcloudHandler()
     public_cloud_id = pcloud.get_public_cloud_id()
@@ -246,14 +250,16 @@ def photo_handler():
     for filedata in files:
         file = filedata["name"]
         fileid = filedata["fileid"]
+        app.logger.debug("Working on file {}".format(file))
         # Get file contents and convert to an image - also required to get exif for date and time of picture taken.
         content = pcloud.get_content(filedata)
-        current_app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
+        app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
         parser = ImageFile.Parser()
         parser.feed(content)
         img = parser.close()
         # Get exif information from picture
         exif = get_labeled_exif(file, img)
+        app.logger.debug("EXIF: {}".format(exif))
         # Calculate new filename including date/time picture taken
         created_dt = get_created_datetime(filedata, exif)
         fn = get_filename(file, created_dt)
@@ -266,22 +272,22 @@ def photo_handler():
             try:
                 medium_img = rotate_image(medium_img, exif["Orientation"])
             except KeyError:
-                current_app.logger.info("{} ({}) no Orientation in exif data".format(file, fn))
+                app.logger.info("{} ({}) no Orientation in exif data".format(file, fn))
         medium_ffn = os.path.join(os.getenv('LOGDIR'), fn)
         medium_img.save(medium_ffn)
         res = pcloud.upload_file(fn, medium_ffn, medium_folderid)
-        current_app.logger.info("File {} medium format loaded, result: {}".format(fn, res["result"]))
+        app.logger.info("File {} medium format loaded, result: {}".format(fn, res["result"]))
         os.remove(medium_ffn)
         # Create small image
         small_img = to_small(medium_img)
         small_ffn = os.path.join(os.getenv('LOGDIR'), fn)
         small_img.save(small_ffn)
         res = pcloud.upload_file(fn, small_ffn, small_folderid)
-        current_app.logger.info("File {} small format loaded, result: {}".format(fn, res["result"]))
+        app.logger.info("File {} small format loaded, result: {}".format(fn, res["result"]))
         os.remove(small_ffn)
     pcloud.close_connection()
     nr_files = len(files)
-    current_app.logger.info("{} pictures have been processed.".format(nr_files))
+    app.logger.info("{} pictures have been processed.".format(nr_files))
     return nr_files
 
 
@@ -294,9 +300,9 @@ def single_photo_handler(nid):
     :return:
     """
     # Get directory names
-    original_dirname = current_app.config["ORIGINAL_FOLDER"]
-    medium_dirname = current_app.config["MEDIUM_FOLDER"]
-    small_dirname = current_app.config["SMALL_FOLDER"]
+    original_dirname = app.config["ORIGINAL_FOLDER"]
+    medium_dirname = app.config["MEDIUM_FOLDER"]
+    small_dirname = app.config["SMALL_FOLDER"]
     # Connect to pcloud and get directory structure
     pcloud = pcloud_handler.PcloudHandler()
     public_cloud_id = pcloud.get_public_cloud_id()
@@ -310,7 +316,7 @@ def single_photo_handler(nid):
     filedata = files[file]
     # Get file contents and convert to an image - also required to get exif for date and time of picture taken.
     content = pcloud.get_content(filedata)
-    current_app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
+    app.logger.debug("File {} length: {} (expected: {})".format(file, len(content), filedata["size"]))
     parser = ImageFile.Parser()
     parser.feed(content)
     img = parser.close()
@@ -322,18 +328,18 @@ def single_photo_handler(nid):
         try:
             medium_img = rotate_image(medium_img, exif["Orientation"])
         except KeyError:
-            current_app.logger.info("{} no Orientation in exif data".format(file))
+            app.logger.info("{} no Orientation in exif data".format(file))
     medium_ffn = os.path.join(os.getenv('LOGDIR'), file)
     medium_img.save(medium_ffn)
     res = pcloud.upload_file(file, medium_ffn, medium_folderid)
-    current_app.logger.info("File {} medium format loaded, result: {}".format(file, res["result"]))
+    app.logger.info("File {} medium format loaded, result: {}".format(file, res["result"]))
     os.remove(medium_ffn)
     # Create small image
     small_img = to_small(medium_img)
     small_ffn = os.path.join(os.getenv('LOGDIR'), file)
     small_img.save(small_ffn)
     res = pcloud.upload_file(file, small_ffn, small_folderid)
-    current_app.logger.info("File {} small format loaded, result: {}".format(file, res["result"]))
+    app.logger.info("File {} small format loaded, result: {}".format(file, res["result"]))
     os.remove(small_ffn)
     pcloud.close_connection()
     return

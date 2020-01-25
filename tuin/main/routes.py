@@ -65,9 +65,9 @@ def index(page=1):
 def archive(page=1):
     items_per_page = current_app.config["ITEMS_PER_PAGE"]
     archlist = ds.get_archive()
-    start = (int(page)-1) * items_per_page
+    start = (int(page) - 1) * items_per_page
     end = int(page) * items_per_page
-    max_page = ((len(archlist)-1) // items_per_page) + 1
+    max_page = ((len(archlist) - 1) // items_per_page) + 1
     params = dict(
         archlist=archlist[start:end],
         searchForm=Search(),
@@ -83,9 +83,9 @@ def archive(page=1):
 def monthlist(ym, page=1):
     nodes_per_page = current_app.config["NODES_PER_PAGE"]
     nodes = ds.get_nodes_for_month(ym)
-    start = (int(page)-1) * nodes_per_page
+    start = (int(page) - 1) * nodes_per_page
     end = int(page) * nodes_per_page
-    max_page = ((len(nodes)-1) // nodes_per_page) + 1
+    max_page = ((len(nodes) - 1) // nodes_per_page) + 1
     params = dict(
         ym=ym,
         title=my_env.monthdisp(ym),
@@ -122,8 +122,8 @@ def loadpictures():
 
     :return:
     """
-    nr_files = photo_handler.photo_handler()
-    flash("{} foto's geladen.".format(nr_files), "info")
+    current_app.task_queue.enqueue('tuin.lib.photo_handler.photo_handler')
+    flash("Foto's laden gestart...", "info")
     return redirect(url_for('main.index'))
 
 
@@ -201,7 +201,7 @@ def post_add(node_id=None, book_id=None):
             node_id = Node.add(**params)
         params = dict(node_id=node_id, title=title, body=body)
         Content.update(**params)
-        ds.update_taxonomy_for_node(node_id, plaats+planten)
+        ds.update_taxonomy_for_node(node_id, plaats + planten)
         return redirect(url_for('main.node', id=node_id))
 
 
@@ -259,7 +259,7 @@ def reloadpicture(nid):
     filename = photo_handler.single_photo_handler(nid)
     flash("{} is opnieuw geladen".format(filename))
     return redirect(url_for('main.node', id=nid))
-    
+
 
 @main.route('/taxonomy/<id>')
 @main.route('/taxonomy/<id>/<page>')
@@ -267,11 +267,11 @@ def reloadpicture(nid):
 def taxonomy(id, page=1):
     items_per_page = current_app.config["ITEMS_PER_PAGE"]
     term = Term.query.filter_by(id=id).one()
-    start = (int(page)-1) * items_per_page
+    start = (int(page) - 1) * items_per_page
     end = int(page) * items_per_page
     nodes = [node for node in term.nodes]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = ((len(sel_nodes)-1) // items_per_page) + 1
+    max_page = ((len(sel_nodes) - 1) // items_per_page) + 1
     params = dict(
         term_id=id,
         title=term.name,
@@ -290,11 +290,11 @@ def taxonomy(id, page=1):
 def taxpics(id, page=1):
     pics_per_page = current_app.config["PICS_PER_PAGE"]
     term = Term.query.filter_by(id=id).one()
-    start = (int(page)-1) * pics_per_page
+    start = (int(page) - 1) * pics_per_page
     end = int(page) * pics_per_page
     nodes = [node for node in term.nodes if (node.type == "photo" or node.type == "lophoto")]
     sel_nodes = sorted(nodes, key=lambda node: node.created, reverse=True)
-    max_page = ((len(sel_nodes)-1) // pics_per_page) + 1
+    max_page = ((len(sel_nodes) - 1) // pics_per_page) + 1
     params = dict(
         term_id=id,
         title=term.name,
@@ -326,9 +326,9 @@ def timeline(term_id, datestamp):
         folders=my_env.get_pic_folders()
     )
     if pos > 0:
-        params["prev_node"] = sel_nodes[pos-1]
-    if len(sel_nodes) > (pos+1):
-        params["next_node"] = sel_nodes[pos+1]
+        params["prev_node"] = sel_nodes[pos - 1]
+    if len(sel_nodes) > (pos + 1):
+        params["next_node"] = sel_nodes[pos + 1]
     return render_template("timeline.html", **params)
 
 

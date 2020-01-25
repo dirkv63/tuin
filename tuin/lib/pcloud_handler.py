@@ -1,4 +1,3 @@
-import logging
 import os
 import requests
 from flask import current_app
@@ -25,8 +24,10 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not connect to pcloud. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
+        else:
+            current_app.logger.debug("Connected to pcloud")
         # Status Code OK, so successful login
         res = r.json()
         self.auth = res["auth"]
@@ -34,7 +35,7 @@ class PcloudHandler:
         quota = res["quota"]
         pct = (usedquota/quota)*100
         msg = "{pct:.2f}% used.".format(pct=pct)
-        logging.info(msg)
+        current_app.logger.debug(msg)
 
     def close_connection(self):
         """
@@ -48,7 +49,7 @@ class PcloudHandler:
         r = self.session.get(url, headers=headers)
         if r.status_code != 200:
             msg = "Could not close connection. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so connection close successful.
         res = r.json()
@@ -67,8 +68,10 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not open file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
+        else:
+            current_app.logger.debug("File is closed")
         # Status Code OK, so successful login
         res = r.json()
         return res
@@ -87,7 +90,7 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not copy file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so successful login
         res = r.json()
@@ -124,9 +127,10 @@ class PcloudHandler:
         file_id = file["fileid"]
         file_desc = self.get_file(file["fileid"])
         fd = file_desc["fd"]
-        logging.debug("File {}, ID {} open with File descriptor {}".format(file["name"], file_id, fd))
-        # Get file contents
         size = file["size"]
+        current_app.logger.debug("File {}, ID {} open with File descriptor {} and size".format(file["name"], file_id,
+                                                                                               fd, size))
+        # Get file contents
         contents = self.read_file(fd, size)
         # Close file
         self.close_file(fd)
@@ -145,7 +149,7 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not open file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so successful login
         res = r.json()
@@ -181,7 +185,7 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not collect metadata. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so successful login
         res = r.json()
@@ -199,14 +203,14 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not logout from pcloud. Status: {s}, reason: {rsn}.".format(s=r.status_code, rsn=r.reason)
-            logging.error(msg)
+            current_app.logger.error(msg)
         else:
             res = r.json()
             if res["auth_deleted"]:
                 msg = "Logout as required"
             else:
                 msg = "Logout not successful, status code: {status}".format(status=r.status_code)
-            logging.info(msg)
+            current_app.logger.info(msg)
 
     def movefile(self, fileid, tofolderid, filename):
         """
@@ -223,7 +227,7 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not move file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so successful login
         res = r.json()
@@ -243,8 +247,10 @@ class PcloudHandler:
         r = self.session.get(url, params=params)
         if r.status_code != 200:
             msg = "Could not open file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
+        else:
+            current_app.logger.debug("File has been read")
         # Status Code OK, so successful login
         res = r.content
         return res
@@ -265,7 +271,7 @@ class PcloudHandler:
         r = self.session.post(url, files=files, params=params)
         if r.status_code != 200:
             msg = "Could not upload file. Status: {s}, reason: {reason}.".format(s=r.status_code, reason=r.reason)
-            logging.critical(msg)
+            current_app.logger.critical(msg)
             raise SystemExit(msg)
         # Status Code OK, so successful login
         res = r.json()

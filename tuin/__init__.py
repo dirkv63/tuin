@@ -1,9 +1,11 @@
 # import os
+import rq
 from config import Config
 from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from redis import Redis
 from tuin.lib import my_env
 
 bootstrap = Bootstrap()
@@ -36,6 +38,9 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     db.init_app(app)
     lm.init_app(app)
+
+    app.redis = Redis.from_url(app.config['REDIS_URL'])
+    app.task_queue = rq.Queue('tuin-tasks', connection=app.redis)
 
     # import blueprints
     from .main import main as main_blueprint
