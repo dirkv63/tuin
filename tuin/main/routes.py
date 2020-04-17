@@ -44,14 +44,6 @@ def pwd_update():
     return render_template('login.html', form=form, hdr='Change Password')
 
 
-@main.route('/adduser', methods=['GET', 'POST'])
-@login_required
-def adduser():
-    user = ds.User()
-    user.register('christien', 'rene')
-    return redirect(url_for('main.index'))
-
-
 @main.route('/')
 @main.route('/index/<page>')
 @login_required
